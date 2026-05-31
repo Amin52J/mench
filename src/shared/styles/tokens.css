@@ -25,6 +25,7 @@
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-6: 1.5rem;
+  --space-8: 2rem;
 
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
@@ -39,6 +40,6 @@
   --piece-drag-duration: 580ms;
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 
-  --board-max-size: min(92vw, 92dvh, 28rem);
+  --board-max-size: min(100vw, 100dvh);
   --board-cell-gap: 1px;
 }

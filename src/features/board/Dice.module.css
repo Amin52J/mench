@@ -16,9 +16,48 @@
     box-shadow var(--motion-fast) var(--ease-standard);
 }
 
+.dice[data-active-color='red'] {
+  --active-player: var(--color-player-red);
+}
+.dice[data-active-color='green'] {
+  --active-player: var(--color-player-green);
+}
+.dice[data-active-color='yellow'] {
+  --active-player: var(--color-player-yellow);
+}
+.dice[data-active-color='blue'] {
+  --active-player: var(--color-player-blue);
+}
+
+.dice[data-active-color] {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--active-player, transparent) 35%, transparent),
+    0 2px 6px rgb(0 0 0 / 12%);
+  animation: dice-turn-pulse 1.6s var(--ease-standard) infinite;
+}
+
+@keyframes dice-turn-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--active-player, transparent) 35%, transparent),
+      0 2px 6px rgb(0 0 0 / 12%);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px color-mix(in srgb, var(--active-player, transparent) 55%, transparent),
+      0 2px 6px rgb(0 0 0 / 12%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dice[data-active-color] {
+    animation: none;
+  }
+}
+
 .dice[data-can-roll='false'] {
   cursor: default;
-  opacity: 0.72;
 }
 
 .dice[data-can-roll='true']:not(:disabled):hover {

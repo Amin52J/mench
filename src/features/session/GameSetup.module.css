@@ -1,5 +1,6 @@
 .panel {
-  width: min(100%, 22rem);
+  width: 100%;
+  border: none;
 }
 
 .heading {

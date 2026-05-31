@@ -2,7 +2,7 @@ import type { DieValue } from '@game/rules';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** How long a skipped or no-move roll stays visible before the next `?` (`product.mdc` feedback). */
-export const ROLL_REVEAL_MS = 2_000;
+export const ROLL_REVEAL_MS = 500;
 
 export interface UseDiceFaceOptions {
   readonly dice: DieValue | null;

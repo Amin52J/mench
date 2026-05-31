@@ -1,24 +1,6 @@
 .boardWrap {
   width: min(100%, var(--board-max-size));
-  margin-inline: auto;
   touch-action: manipulation;
-}
-
-.boardWrap[data-active-color='red'] {
-  --active-player: var(--color-player-red);
-}
-.boardWrap[data-active-color='green'] {
-  --active-player: var(--color-player-green);
-}
-.boardWrap[data-active-color='yellow'] {
-  --active-player: var(--color-player-yellow);
-}
-.boardWrap[data-active-color='blue'] {
-  --active-player: var(--color-player-blue);
-}
-
-.boardWrap[data-turn-pulse='true'] .board {
-  animation: turn-pulse 1.6s var(--ease-standard) infinite;
 }
 
 @keyframes turn-pulse {
@@ -44,9 +26,6 @@
   gap: 0;
   width: 100%;
   aspect-ratio: 1;
-  padding: var(--space-1);
-  border: 2px solid var(--color-board-outline);
-  border-radius: var(--radius-sm);
   background: var(--color-board-center);
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--active-player, transparent) 35%, transparent),
@@ -110,16 +89,16 @@
 }
 
 .tint-red.track-start {
-  background: color-mix(in srgb, var(--color-player-red) 50%, white);
+  background: var(--color-player-red-muted);
 }
 .tint-green.track-start {
-  background: color-mix(in srgb, var(--color-player-green) 50%, white);
+  background: var(--color-player-green-muted);
 }
 .tint-yellow.track-start {
-  background: color-mix(in srgb, var(--color-player-yellow) 65%, white);
+  background: var(--color-player-yellow-muted);
 }
 .tint-blue.track-start {
-  background: color-mix(in srgb, var(--color-player-blue) 50%, white);
+  background: var(--color-player-blue-muted);
 }
 
 .home {

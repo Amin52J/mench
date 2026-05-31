@@ -36,16 +36,6 @@ export function OnlineLobbyView({ room, roomId, onLeave }: OnlineLobbyViewProps)
     }
   }, [shareUrl]);
 
-  const copyCode = useCallback(async (): Promise<void> => {
-    if (!lobby) return;
-    try {
-      await navigator.clipboard.writeText(lobby.joinCode);
-      setCopyHint('Code copied');
-    } catch {
-      setCopyHint('Copy failed');
-    }
-  }, [lobby]);
-
   if (!lobby || !setup) {
     return (
       <OnlineConnecting
@@ -68,11 +58,6 @@ export function OnlineLobbyView({ room, roomId, onLeave }: OnlineLobbyViewProps)
     sendSetup(setup.playerCount, seats);
   };
 
-  const handlePreset = (preset: GameSetup): void => {
-    const next = normalizeSetup(preset);
-    sendSetup(next.playerCount, next.seats);
-  };
-
   const canStart = lobby.seats.some((s) => s.kind === 'human');
 
   return (
@@ -83,16 +68,8 @@ export function OnlineLobbyView({ room, roomId, onLeave }: OnlineLobbyViewProps)
         </p>
       ) : null}
 
-      <div className={styles.codeBlock} aria-label="Join code">
-        <span>Join code</span>
-        <strong className={styles.code}>{lobby.joinCode}</strong>
-      </div>
-
       <div className={styles.copyRow}>
-        <Button type="button" variant="ghost" onClick={() => void copyCode()}>
-          Copy code
-        </Button>
-        <Button type="button" variant="ghost" onClick={() => void copyLink()}>
+        <Button type="button" variant="ghost" onClick={() => void copyLink()} className={styles.copyButton}>
           Copy invite link
         </Button>
       </div>
@@ -107,39 +84,16 @@ export function OnlineLobbyView({ room, roomId, onLeave }: OnlineLobbyViewProps)
         setup={setup}
         onPlayerCount={handlePlayerCount}
         onSeatKind={handleSeatKind}
-        onApplyPreset={handlePreset}
         onStart={sendStartGame}
         readOnly={!isHost}
         heading="Online lobby"
-        lead={
-          isHost
-            ? 'Configure seats, then start when everyone is ready.'
-            : 'Waiting for the host to configure and start the game.'
-        }
         startLabel="Start game"
         showStart={isHost}
         canStartOverride={canStart}
       />
 
-      <ul className={styles.roster} aria-label="Connected players">
-        {lobby.seats.slice(0, lobby.playerCount).map((seat) => (
-          <li key={seat.color}>
-            <span data-color={seat.color}>{seat.color}</span>
-            <span>
-              {seat.kind === 'cpu'
-                ? 'CPU'
-                : seat.claimed
-                  ? (seat.displayName ?? 'Human') +
-                    (room.seat?.color === seat.color ? ' (you)' : '')
-                  : 'Open'}
-            </span>
-            {seat.disconnected ? <span>(away)</span> : null}
-          </li>
-        ))}
-      </ul>
-
       <div className={styles.footer}>
-        <Button type="button" variant="ghost" onClick={onLeave}>
+        <Button type="button" variant="ghost" onClick={onLeave} className={styles.leaveButton}>
           Leave
         </Button>
       </div>

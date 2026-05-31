@@ -1,4 +1,5 @@
 import type { DieValue } from '@game/rules';
+import type { PlayerColor } from '@game/types';
 import { useEffect, useRef, useState } from 'react';
 import { usePrefersReducedMotion } from '@/shared/hooks';
 import styles from './Dice.module.css';
@@ -9,6 +10,11 @@ export interface DiceProps {
   readonly value: DieValue | null;
   readonly canRoll: boolean;
   readonly onRoll: () => void;
+  /**
+   * Color of the player whose turn it currently is. When provided, the dice
+   * gets the same glow/pulse treatment as the board, indicating turn ownership.
+   */
+  readonly activeColor?: PlayerColor | null;
 }
 
 function pipLayout(value: DieValue): readonly boolean[] {
@@ -23,7 +29,7 @@ function pipLayout(value: DieValue): readonly boolean[] {
   return layouts[value];
 }
 
-export function Dice({ value, canRoll, onRoll }: DiceProps) {
+export function Dice({ value, canRoll, onRoll, activeColor }: DiceProps) {
   const reducedMotion = usePrefersReducedMotion();
   const [displayValue, setDisplayValue] = useState<DieValue | null>(value);
   const [tumbling, setTumbling] = useState(false);
@@ -66,6 +72,7 @@ export function Dice({ value, canRoll, onRoll }: DiceProps) {
       className={styles.dice}
       data-tumbling={tumbling ? 'true' : 'false'}
       data-can-roll={canRoll ? 'true' : 'false'}
+      data-active-color={activeColor ?? undefined}
       disabled={!canRoll || tumbling}
       aria-label={label}
       onClick={() => {

@@ -1,9 +1,7 @@
 import { isGameOver } from '@game/rules';
-import { BoardView, Dice, useDiceFace } from '@/features/board';
-import { randomDie } from './localGameReducer.ts';
-import { Button, Panel } from '@/shared/ui';
+import { BoardView, Dice } from '@/features/board';
+import { Panel } from '@/shared/ui';
 import { playersForCount } from './types.ts';
-import { TurnTimer } from './TurnTimer.tsx';
 import { WinOverlay } from './WinOverlay.tsx';
 import type { UseLocalGameResult } from './useLocalGame.ts';
 import styles from './LocalGameView.module.css';
@@ -13,13 +11,10 @@ export interface LocalGameViewProps {
 }
 
 export function LocalGameView({ session }: LocalGameViewProps) {
-  const { game, setup, seatKinds, activeColor, activeSeatKind, feedback } = session;
-  const { face: diceFace, announceRoll } = useDiceFace({
-    dice: game?.dice ?? null,
-    lastRoll: game?.lastRoll ?? null,
-    canRoll: session.canRoll,
-    resetKey: session.sessionKey,
-  });
+  const { game, setup, activeColor, feedback } = session;
+  // Dice face is driven directly by the turn-phase state machine in
+  // `useLocalGame` — `?` while idle, the rolled die during revealing/moving.
+  const diceFace = session.diceFace;
 
   if (game === null || activeColor === null) {
     return null;
@@ -31,41 +26,12 @@ export function LocalGameView({ session }: LocalGameViewProps) {
     winner !== null && !isGameOver(game) && game.placements.length < players.length;
 
   const handleRoll = (): void => {
-    const die = randomDie();
-    announceRoll(die);
-    session.roll(die);
+    session.roll();
   };
-  const phaseHint =
-    game.phase === 'roll'
-      ? activeSeatKind === 'cpu'
-        ? 'CPU is rolling…'
-        : 'Roll the die'
-      : activeSeatKind === 'cpu'
-        ? 'CPU is moving…'
-        : 'Tap a highlighted piece';
 
   return (
     <>
       <Panel className={styles.panel}>
-        <div className={styles.statusRow}>
-          <p className={styles.turnHint} data-pulse="true">
-            <strong data-color={activeColor}>{activeColor}</strong>
-            <span className={styles.seatKind}>
-              {activeSeatKind === 'cpu' ? ' (CPU)' : ''}
-            </span>
-            <span className={styles.phaseHint}> — {phaseHint}</span>
-          </p>
-          <TurnTimer
-            visible={session.showTurnTimer}
-            secondsLeft={session.timerSeconds}
-            progress={session.timerProgress}
-          />
-        </div>
-
-        <div className={styles.playRow}>
-          <Dice value={diceFace} canRoll={session.canRoll} onRoll={handleRoll} />
-        </div>
-
         <BoardView
           key={session.sessionKey}
           board={game.board}
@@ -73,33 +39,26 @@ export function LocalGameView({ session }: LocalGameViewProps) {
           players={players}
           legalPieceKeys={session.legalPieceKeys}
           shakePieceKey={feedback.shakePieceKey}
-          interactive={
-            session.isHumanTurn && game.phase === 'move' && !session.isPieceAnimating
-          }
+          interactive={session.isHumanTurn && game.phase === 'move' && !session.isPieceAnimating}
           pieceVisuals={session.pieceVisuals}
           captureFlash={session.captureFlash}
           onPieceSelect={(piece) => session.tryMove(piece)}
         />
+
+        <div className={styles.playRow}>
+          <Dice
+            value={diceFace}
+            canRoll={session.canRoll}
+            onRoll={handleRoll}
+            activeColor={activeColor}
+          />
+        </div>
 
         {feedback.toast ? (
           <p className={styles.toast} role="status">
             {feedback.toast}
           </p>
         ) : null}
-
-        <ul className={styles.seatStatus} aria-label="Seat types">
-          {players.map((color, index) => (
-            <li key={color} data-color={color} data-active={color === activeColor ? 'true' : 'false'}>
-              {color}: {seatKinds[index] ?? 'human'}
-            </li>
-          ))}
-        </ul>
-
-        <div className={styles.footer}>
-          <Button variant="ghost" onClick={session.backToSetup}>
-            Setup
-          </Button>
-        </div>
       </Panel>
 
       {session.showWinOverlay && winner !== null ? (

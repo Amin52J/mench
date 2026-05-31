@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   BoardView,
   Dice,
-  devFixtureOptions,
   formatMoveLabel,
   useAnimationPlayground,
   useDevBoardFixture,
@@ -88,16 +87,13 @@ export default function App() {
   if (fixtureOnly) {
     return (
       <main className={styles.shell}>
-        <AppHeader />
         <FixtureBoardView fixture={fixture} />
-        <DevTools fixture={fixture} play={false} />
       </main>
     );
   }
 
   return (
     <main className={styles.shell}>
-      <AppHeader />
       {screen === 'home' ? (
         <HomeView
           online={online}
@@ -115,28 +111,17 @@ export default function App() {
               setup={session.setup}
               onPlayerCount={session.setPlayerCount}
               onSeatKind={session.setSeatKind}
-              onApplyPreset={session.applySetup}
               onStart={session.startGame}
             />
-            <Button variant="ghost" onClick={() => setScreen('home')}>
+            <Button variant="ghost" onClick={() => setScreen('home')} className={styles.backButton}>
               Back
             </Button>
           </>
         ) : (
-          <>
-            <LocalGameView session={session} />
-            <Button variant="ghost" onClick={() => session.backToSetup()}>
-              New game
-            </Button>
-            <Button variant="ghost" onClick={() => setScreen('home')}>
-              Home
-            </Button>
-          </>
+          <LocalGameView session={session} />
         )
       ) : null}
-      {screen === 'online' && !online ? (
-        <OfflinePage onBack={leaveOnline} />
-      ) : null}
+      {screen === 'online' && !online ? <OfflinePage onBack={leaveOnline} /> : null}
       {screen === 'online' && online && linkJoin && onlineCredentials === null ? (
         <OnlineJoinGate
           roomId={linkJoin.roomId}
@@ -148,19 +133,7 @@ export default function App() {
       {screen === 'online' && online && onlineCredentials !== null ? (
         <OnlineRoomView credentials={onlineCredentials} onLeave={leaveOnline} />
       ) : null}
-      {import.meta.env.DEV && screen !== 'online' ? (
-        <DevTools fixture={fixture} play={false} />
-      ) : null}
     </main>
-  );
-}
-
-function AppHeader() {
-  return (
-    <header className={styles.header}>
-      <h1 className={styles.title}>Mench</h1>
-      <p className={styles.subtitle}>منچ — standard Ludo</p>
-    </header>
   );
 }
 
@@ -186,7 +159,6 @@ function DevPlaygroundView({
 }) {
   return (
     <>
-      <AppHeader />
       <Panel className={styles.boardPanel}>
         <div className={styles.playRow}>
           <p className={styles.turnHint} data-pulse="true">
@@ -215,62 +187,5 @@ function DevPlaygroundView({
       </Panel>
       <p className={styles.devLabel}>Animation playground (`?play=1`)</p>
     </>
-  );
-}
-
-function DevTools({
-  fixture,
-  play,
-}: {
-  readonly fixture: ReturnType<typeof useDevBoardFixture>;
-  readonly play: boolean;
-}) {
-  const { fixtureId, isDev } = fixture;
-  if (!isDev) return null;
-
-  return (
-    <Panel className={styles.devPanel} aria-label="Development fixtures">
-      <p className={styles.devLabel}>
-        Dev: <code>?play=1</code> animation playground · <code>?fixture=…</code> static board
-      </p>
-      <div className={styles.devActions}>
-        {devFixtureOptions().map((id) => (
-          <Button
-            key={id}
-            variant={id === fixtureId && !play ? 'primary' : 'ghost'}
-            onClick={() => {
-              const url = new URL(globalThis.location.href);
-              url.searchParams.delete('play');
-              url.searchParams.set('fixture', id);
-              globalThis.location.assign(url);
-            }}
-          >
-            {id}
-          </Button>
-        ))}
-        <Button
-          variant={play ? 'primary' : 'ghost'}
-          onClick={() => {
-            const url = new URL(globalThis.location.href);
-            url.searchParams.set('play', '1');
-            url.searchParams.delete('fixture');
-            globalThis.location.assign(url);
-          }}
-        >
-          play
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            const url = new URL(globalThis.location.href);
-            url.searchParams.delete('play');
-            url.searchParams.delete('fixture');
-            globalThis.location.assign(url);
-          }}
-        >
-          app
-        </Button>
-      </div>
-    </Panel>
   );
 }

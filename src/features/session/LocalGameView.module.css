@@ -1,5 +1,6 @@
 .panel {
   max-width: min(100%, calc(var(--board-max-size) + 2rem));
+  padding: 0;
 }
 
 .statusRow {
@@ -57,7 +58,7 @@
 .playRow {
   display: flex;
   justify-content: center;
-  margin-bottom: var(--space-3);
+  margin: var(--space-4) 0;
 }
 
 .toast {

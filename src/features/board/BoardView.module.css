@@ -16,7 +16,26 @@
   --active-player: var(--color-player-blue);
 }
 
+.boardWrap[data-turn-pulse='true'] .board {
+  animation: turn-pulse 1.6s var(--ease-standard) infinite;
+}
+
+@keyframes turn-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--active-player, transparent) 35%, transparent),
+      inset 0 0 0 1px rgb(0 0 0 / 6%);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px color-mix(in srgb, var(--active-player, transparent) 55%, transparent),
+      inset 0 0 0 1px rgb(0 0 0 / 6%);
+  }
+}
+
 .board {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(15, 1fr);
   grid-template-rows: repeat(15, 1fr);
@@ -30,6 +49,27 @@
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--active-player, transparent) 35%, transparent),
     inset 0 0 0 1px rgb(0 0 0 / 6%);
+}
+
+.pieceLayer {
+  position: absolute;
+  inset: var(--space-1);
+  pointer-events: none;
+}
+
+.captureFlash {
+  animation: capture-flash var(--motion-slow) var(--ease-standard);
+}
+
+@keyframes capture-flash {
+  0%,
+  100% {
+    background: inherit;
+  }
+  40% {
+    background: color-mix(in srgb, #ef4444 55%, var(--color-board-track));
+    box-shadow: inset 0 0 0 2px rgb(239 68 68 / 70%);
+  }
 }
 
 .cell {
@@ -99,17 +139,17 @@
 }
 
 .piece {
-  --slot-x: 50%;
-  --slot-y: 50%;
   position: absolute;
-  width: 52%;
-  height: 52%;
-  left: var(--slot-x);
-  top: var(--slot-y);
+  width: calc(52% / 15);
+  height: calc(52% / 15);
   border-radius: var(--radius-full);
   border: 2px solid var(--color-piece-outline);
   box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translate(var(--stack-offset-x, 0), var(--stack-offset-y, 0));
+  transition:
+    left var(--motion-normal) var(--ease-standard),
+    top var(--motion-normal) var(--ease-standard),
+    transform var(--motion-normal) var(--ease-standard);
 }
 
 .piece[data-color='red'] {
@@ -125,19 +165,33 @@
   background: var(--color-player-blue);
 }
 
-.piece:nth-child(1) {
-  --slot-x: 38%;
-  --slot-y: 38%;
+.piece[data-stack='0'] {
+  --stack-offset-x: -12%;
+  --stack-offset-y: -12%;
 }
-.piece:nth-child(2) {
-  --slot-x: 62%;
-  --slot-y: 38%;
+.piece[data-stack='1'] {
+  --stack-offset-x: 12%;
+  --stack-offset-y: -12%;
 }
-.piece:nth-child(3) {
-  --slot-x: 38%;
-  --slot-y: 62%;
+.piece[data-stack='2'] {
+  --stack-offset-x: -12%;
+  --stack-offset-y: 12%;
 }
-.piece:nth-child(4) {
-  --slot-x: 62%;
-  --slot-y: 62%;
+.piece[data-stack='3'] {
+  --stack-offset-x: 12%;
+  --stack-offset-y: 12%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boardWrap[data-turn-pulse='true'] .board {
+    animation: none;
+  }
+
+  .piece {
+    transition: none;
+  }
+
+  .captureFlash {
+    animation: none;
+  }
 }

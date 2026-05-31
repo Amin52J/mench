@@ -1,12 +1,8 @@
 import { pieceKey } from '@game/types';
-import type { BoardState, PieceIndex, PlayerColor } from '@game/types';
+import type { BoardState, PlayerColor } from '@game/types';
 import { PLAYER_COLORS } from '@game/types';
-import {
-  GRID_SIZE,
-  getCellModel,
-  positionToCoord,
-  type GridCoord,
-} from './boardLayout.ts';
+import { GRID_SIZE, getCellModel } from './boardLayout.ts';
+import { usePieceAnimations } from './usePieceAnimations.ts';
 import styles from './BoardView.module.css';
 
 export interface BoardViewProps {
@@ -15,93 +11,87 @@ export interface BoardViewProps {
   readonly players?: readonly PlayerColor[];
 }
 
-interface PlacedPiece {
-  readonly color: PlayerColor;
-  readonly index: PieceIndex;
-  readonly coord: GridCoord;
-}
-
 export function BoardView({
   board,
   activeColor,
   players = PLAYER_COLORS,
 }: BoardViewProps) {
-  const pieces = collectPieces(board, players);
-  const piecesByCell = groupPiecesByCell(pieces);
+  const { pieces, captureFlash } = usePieceAnimations(board, players);
 
   return (
     <div
       className={styles.boardWrap}
       data-active-color={activeColor}
+      data-turn-pulse={activeColor !== undefined ? 'true' : 'false'}
       aria-label="Ludo board"
     >
-      <div className={styles.board} role="grid" aria-rowcount={GRID_SIZE} aria-colcount={GRID_SIZE}>
+      <div
+        className={styles.board}
+        role="grid"
+        aria-rowcount={GRID_SIZE}
+        aria-colcount={GRID_SIZE}
+      >
         {Array.from({ length: GRID_SIZE }, (_, row) =>
           Array.from({ length: GRID_SIZE }, (_, col) => {
             const model = getCellModel(row, col);
             const key = `${row}-${col}`;
-            const stack = piecesByCell.get(`${row},${col}`) ?? [];
+            const isFlash =
+              captureFlash !== null &&
+              captureFlash.row === row &&
+              captureFlash.col === col;
             return (
               <div
                 key={key}
-                className={cellClassName(model)}
+                className={cellClassName(model, isFlash)}
                 data-kind={model.kind}
                 data-color={model.color}
+                data-capture-flash={isFlash ? 'true' : 'false'}
                 role="gridcell"
-              >
-                {stack.map((piece) => (
-                  <span
-                    key={pieceKey({ color: piece.color, index: piece.index })}
-                    className={styles.piece}
-                    data-color={piece.color}
-                    title={`${piece.color} piece ${piece.index + 1}`}
-                  />
-                ))}
-              </div>
+              />
             );
           }),
         )}
+        <div className={styles.pieceLayer} aria-hidden>
+          {pieces.map((piece) => (
+            <span
+              key={pieceKey(piece.id)}
+              className={styles.piece}
+              data-color={piece.color}
+              data-stack={piece.stackIndex}
+              style={pieceStyle(piece.coord)}
+              title={`${piece.color} piece ${piece.index + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-function collectPieces(board: BoardState, players: readonly PlayerColor[]): PlacedPiece[] {
-  const result: PlacedPiece[] = [];
-  for (const color of players) {
-    for (let index = 0; index < 4; index++) {
-      const key = pieceKey({ color, index: index as PieceIndex });
-      const position = board.positions[key];
-      if (position === undefined) continue;
-      const coord = positionToCoord(color, index, position);
-      if (coord === null) continue;
-      result.push({ color, index: index as PieceIndex, coord });
-    }
-  }
-  return result;
+function pieceStyle(coord: {
+  readonly row: number;
+  readonly col: number;
+}): { left: string; top: string } {
+  const cell = 100 / GRID_SIZE;
+  return {
+    left: `${(coord.col + 0.5) * cell}%`,
+    top: `${(coord.row + 0.5) * cell}%`,
+  };
 }
 
-function groupPiecesByCell(pieces: readonly PlacedPiece[]): Map<string, PlacedPiece[]> {
-  const map = new Map<string, PlacedPiece[]>();
-  for (const piece of pieces) {
-    const key = `${piece.coord.row},${piece.coord.col}`;
-    const list = map.get(key);
-    if (list === undefined) {
-      map.set(key, [piece]);
-    } else {
-      list.push(piece);
-    }
-  }
-  return map;
-}
-
-function cellClassName(model: ReturnType<typeof getCellModel>): string {
+function cellClassName(
+  model: ReturnType<typeof getCellModel>,
+  isFlash: boolean,
+): string {
   const classes = [styles.cell];
   if (model.kind !== 'empty') {
     classes.push(styles[model.kind]);
   }
   if (model.color !== undefined) {
     classes.push(styles[`tint-${model.color}`]);
+  }
+  if (isFlash) {
+    classes.push(styles.captureFlash);
   }
   return classes.join(' ');
 }

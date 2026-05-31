@@ -11,7 +11,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 
 ---
 
-## Wave 1 — Rules engine & scaffold ⬜
+## Wave 1 — Rules engine & scaffold ✅
 
 **Wave goal:** Runnable React app shell and a **pure, tested** Ludo rules engine with no UI dependency.
 
@@ -21,7 +21,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 2. `pnpm test` runs unit tests for moves, captures, sixes, three-sixes, and win detection.
 3. Rules module has **zero** imports from React or Workers.
 
-**Phases:** 1.1 ✅ · 1.2 ✅ · 1.3 ⬜
+**Phases:** 1.1 ✅ · 1.2 ✅ · 1.3 ✅
 
 ---
 

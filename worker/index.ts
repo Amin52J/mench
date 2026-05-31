@@ -71,7 +71,26 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     return handleCreateRoom(request, env);
   }
 
+  const wsMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/ws$/);
+  if (wsMatch) {
+    return handleWebSocket(request, env, wsMatch[1]!);
+  }
+
   return jsonResponse(request, { error: 'not_found' }, 404);
+}
+
+function handleWebSocket(request: Request, env: Env, roomId: string): Promise<Response> {
+  if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
+    return Promise.resolve(new Response('Expected websocket', { status: 426 }));
+  }
+  const id = env.GAME_ROOM.idFromName(roomId);
+  const stub = env.GAME_ROOM.get(id);
+  return stub.fetch(
+    new Request(`http://game-room/ws`, {
+      headers: request.headers,
+      method: 'GET',
+    }),
+  );
 }
 
 export default {

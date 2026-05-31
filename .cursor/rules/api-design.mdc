@@ -50,6 +50,13 @@ type ServerMessage =
 - On expiry without completed turn: apply **skip turn** via rules engine; broadcast new state.
 - Clients may show local countdown but **server deadline wins** on conflict.
 
+## Sequence numbers & reconnect (phase 4.2)
+
+- The DO holds an in-memory monotonic `seq` (starts at 0 after `init`). Every successful state transition increments it by 1; illegal intents reply with `error` and do **not** advance `seq`.
+- Every broadcast (`welcome`, `state`) carries the current `seq`. Clients accept a `state` only when `seq` is strictly greater than the last one they applied; smaller or equal `seq` values are dropped (out-of-order or replay).
+- A fresh `welcome` snapshot (returned after `join`) always replaces local state — it is the resync mechanism on reconnect.
+- **Reconnect policy v1:** when a client's socket closes, the DO frees its seat immediately. Reconnecting means opening a new WebSocket and sending `join` again; the new join picks the first free human seat — there is no seat-by-token resume yet. Phase 4.3 will add a short grace window so a refreshed tab keeps its seat.
+
 ## Security (v1)
 
 - Join code entropy ≥ 6 alphanumeric characters.

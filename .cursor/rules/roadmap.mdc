@@ -49,7 +49,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 2. CPUs auto-play with thinking delay; humans use timer when applicable.
 3. CPUs feel competitive in manual playtest.
 
-**Phases:** 3.1 ✅ · 3.2 ⬜ · 3.3 ⬜
+**Phases:** 3.1 ✅ · 3.2 ✅ · 3.3 ⬜
 
 ---
 

@@ -6,6 +6,7 @@ import {
   type GameState,
   type LegalMove,
 } from '@game/rules';
+import { chooseMove, pickCpuThinkDelayMs } from '@game/ai';
 import type { PlayerKind } from '@game/types';
 import { pieceKey, type PieceId } from '@game/types';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
@@ -222,16 +223,16 @@ export function useLocalGame(): UseLocalGameResult {
     }
 
     const snapshot = game;
-    const delayMs = 450;
+    const delayMs = pickCpuThinkDelayMs();
     const timer = globalThis.setTimeout(() => {
       if (snapshot.phase === 'roll') {
         dispatch({ type: 'roll', die: randomDie() });
         return;
       }
       if (snapshot.phase === 'move') {
-        const moves = getLegalMoves(snapshot);
-        if (moves.length > 0) {
-          dispatch({ type: 'move', piece: moves[0]!.piece });
+        const pick = chooseMove(snapshot);
+        if (pick !== null) {
+          dispatch({ type: 'move', piece: pick.piece });
         } else {
           dispatch({ type: 'forfeit' });
         }

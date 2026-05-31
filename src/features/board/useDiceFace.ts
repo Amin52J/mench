@@ -8,6 +8,8 @@ export interface UseDiceFaceOptions {
   readonly dice: DieValue | null;
   readonly lastRoll: DieValue | null;
   readonly canRoll: boolean;
+  /** Bumps when a new local session starts so held faces do not leak across games. */
+  readonly resetKey?: number;
 }
 
 export interface UseDiceFaceResult {
@@ -24,6 +26,7 @@ export function useDiceFace({
   dice,
   lastRoll,
   canRoll,
+  resetKey = 0,
 }: UseDiceFaceOptions): UseDiceFaceResult {
   const [held, setHeld] = useState<DieValue | null>(null);
   const seenLastRoll = useRef<DieValue | null>(null);
@@ -55,6 +58,12 @@ export function useDiceFace({
     },
     [holdFace],
   );
+
+  useEffect(() => {
+    clearHoldTimer();
+    setHeld(null);
+    seenLastRoll.current = null;
+  }, [clearHoldTimer, resetKey]);
 
   useEffect(() => {
     if (dice !== null) {

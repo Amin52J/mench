@@ -90,7 +90,7 @@ describe('chooseMove — frozen lookahead positions', () => {
     expect(choice!.to).toEqual({ zone: 'track', index: GREEN_START });
   });
 
-  it('still prefers exact finish over a capture that hands the opponent a strong reply', () => {
+  it('still prefers exact finish when finish and capture are both legal', () => {
     const die = 3;
     const RED_START = getStartTrackIndex('red');
     const game = placePieces(

@@ -1,6 +1,6 @@
 import { advanceAlongTrack } from '@game/board';
 import type { PieceIndex, PiecePosition, PlayerColor } from '@game/types';
-import { positionToCoord, yardSlotCoord, type GridCoord } from './boardLayout.ts';
+import { positionToCoord, yardSlotCoord, type PieceCoord } from './boardLayout.ts';
 
 export function positionsEqual(a: PiecePosition, b: PiecePosition): boolean {
   if (a.zone !== b.zone) return false;
@@ -17,8 +17,8 @@ export function buildPieceCoordPath(
   pieceIndex: PieceIndex,
   from: PiecePosition,
   to: PiecePosition,
-): GridCoord[] {
-  const path: GridCoord[] = [];
+): PieceCoord[] {
+  const path: PieceCoord[] = [];
   const push = (pos: PiecePosition): void => {
     const coord =
       pos.zone === 'yard'
@@ -39,6 +39,7 @@ export function buildPieceCoordPath(
     return path;
   }
 
+  /** Capture return: UI animates as a single drag to the yard (`usePieceAnimations`). */
   if (from.zone === 'track' && to.zone === 'yard') {
     push(to);
     return path;

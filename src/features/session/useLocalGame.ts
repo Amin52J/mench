@@ -3,19 +3,22 @@ import {
   activeSeatKind,
   getLegalMoves,
   IllegalIntentError,
+  isGameOver,
   type DieValue,
   type GameState,
   type LegalMove,
 } from '@game/rules';
 import { chooseMove, pickCpuThinkDelayMs } from '@game/ai';
-import type { PlayerKind } from '@game/types';
+import { turnTimerApplies, type PlayerKind } from '@game/types';
 import { pieceKey, type PieceId } from '@game/types';
+import { usePieceAnimations } from '@/features/board/usePieceAnimations.ts';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { localGameReducer, randomDie } from './localGameReducer.ts';
 import { devAllowAllCpuStart } from './devFlags.ts';
 import {
   defaultSetup,
   normalizeSetup,
+  playersForCount,
   type GameSetup,
   type SeatConfig,
 } from './types.ts';
@@ -45,12 +48,19 @@ export interface UseLocalGameResult {
   readonly legalPieceKeys: ReadonlySet<string>;
   readonly canRoll: boolean;
   readonly isHumanTurn: boolean;
+  readonly showTurnTimer: boolean;
   readonly timerSeconds: number;
   readonly timerProgress: number;
+  readonly isPieceAnimating: boolean;
+  readonly pieceVisuals: ReturnType<typeof usePieceAnimations>['pieces'];
+  readonly captureFlash: ReturnType<typeof usePieceAnimations>['captureFlash'];
   readonly feedback: LocalGameFeedback;
   readonly roll: (die?: DieValue) => void;
   readonly move: (piece: PieceId) => void;
   readonly tryMove: (piece: PieceId) => void;
+  readonly sessionKey: number;
+  readonly showWinOverlay: boolean;
+  readonly continueForPlacements: () => void;
 }
 
 const FEEDBACK_MS = 1400;
@@ -59,6 +69,8 @@ export function useLocalGame(): UseLocalGameResult {
   const [screen, setScreen] = useState<LocalScreen>('setup');
   const [setup, setSetup] = useState<GameSetup>(() => defaultSetup(4));
   const [game, dispatch] = useReducer(localGameReducer, null);
+  const [sessionKey, setSessionKey] = useState(0);
+  const [hideWinOverlay, setHideWinOverlay] = useState(false);
   const [shakePieceKey, setShakePieceKey] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
@@ -113,6 +125,8 @@ export function useLocalGame(): UseLocalGameResult {
     }
     setSetup(normalized);
     dispatch({ type: 'start', setup: normalized });
+    setSessionKey((key) => key + 1);
+    setHideWinOverlay(false);
     setScreen('play');
     setShakePieceKey(null);
     setToast(null);
@@ -121,6 +135,8 @@ export function useLocalGame(): UseLocalGameResult {
   const restartGame = useCallback(() => {
     const normalized = normalizeSetup(setup);
     dispatch({ type: 'restart', setup: normalized });
+    setSessionKey((key) => key + 1);
+    setHideWinOverlay(false);
     setShakePieceKey(null);
     setToast(null);
   }, [setup]);
@@ -128,9 +144,26 @@ export function useLocalGame(): UseLocalGameResult {
   const backToSetup = useCallback(() => {
     setScreen('setup');
     dispatch({ type: 'reset' });
+    setSessionKey((key) => key + 1);
+    setHideWinOverlay(false);
     setShakePieceKey(null);
     setToast(null);
   }, []);
+
+  const continueForPlacements = useCallback(() => {
+    setHideWinOverlay(true);
+  }, []);
+
+  const boardPlayers = useMemo(
+    () => (game === null ? [] : [...playersForCount(setup.playerCount)]),
+    [game, setup.playerCount],
+  );
+
+  const {
+    pieces: pieceVisuals,
+    captureFlash,
+    isAnimating: isPieceAnimating,
+  } = usePieceAnimations(game?.board ?? null, boardPlayers, { resetKey: sessionKey });
 
   const activePlayerIndex = game?.activePlayerIndex ?? 0;
   const seatKinds =
@@ -151,7 +184,11 @@ export function useLocalGame(): UseLocalGameResult {
   );
 
   const isHumanTurn =
-    game !== null && game.winner === null && currentActiveSeatKind === 'human';
+    game !== null &&
+    !isGameOver(game) &&
+    currentActiveSeatKind === 'human';
+
+  const showTurnTimer = isHumanTurn && turnTimerApplies(seatKinds);
 
   const canRoll = isHumanTurn && game.phase === 'roll';
 
@@ -160,7 +197,7 @@ export function useLocalGame(): UseLocalGameResult {
   }, []);
 
   const { secondsLeft: timerSeconds, progress: timerProgress } = useTurnTimer({
-    enabled: isHumanTurn,
+    enabled: showTurnTimer,
     turnKey: activePlayerIndex,
     onExpire: autoPlayOnTimeout,
   });
@@ -220,7 +257,10 @@ export function useLocalGame(): UseLocalGameResult {
   );
 
   useEffect(() => {
-    if (screen !== 'play' || game === null || game.winner !== null) {
+    if (screen !== 'play' || game === null || isGameOver(game)) {
+      return;
+    }
+    if (isPieceAnimating) {
       return;
     }
     if (currentActiveSeatKind !== 'cpu') {
@@ -245,7 +285,7 @@ export function useLocalGame(): UseLocalGameResult {
     }, delayMs);
 
     return () => globalThis.clearTimeout(timer);
-  }, [currentActiveSeatKind, game, screen]);
+  }, [currentActiveSeatKind, game, screen, isPieceAnimating]);
 
   return {
     screen,
@@ -264,11 +304,18 @@ export function useLocalGame(): UseLocalGameResult {
     legalPieceKeys,
     canRoll,
     isHumanTurn,
+    showTurnTimer,
     timerSeconds,
     timerProgress,
+    isPieceAnimating,
+    pieceVisuals,
+    captureFlash,
     feedback: { shakePieceKey, toast },
     roll,
     move,
     tryMove,
+    sessionKey,
+    showWinOverlay: game !== null && game.winner !== null && !hideWinOverlay,
+    continueForPlacements,
   };
 }

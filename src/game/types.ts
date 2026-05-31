@@ -12,6 +12,18 @@ export const PLAYER_COLORS = [
 /** Whether a seat is controlled by a human or the CPU (`product.mdc` O12). */
 export type PlayerKind = 'human' | 'cpu';
 
+/** 30s turn timer applies only when two or more human seats are in play. */
+export function turnTimerApplies(seatKinds: readonly PlayerKind[]): boolean {
+  let humans = 0;
+  for (const kind of seatKinds) {
+    if (kind === 'human') {
+      humans += 1;
+      if (humans > 1) return true;
+    }
+  }
+  return false;
+}
+
 export type PieceIndex = 0 | 1 | 2 | 3;
 
 /** One of four tokens for a seat. */

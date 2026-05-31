@@ -1,7 +1,7 @@
 /**
  * Pure Ludo rules engine — reducer/API for the standard international Ludo
- * rules locked in `product.mdc` (stacking allowed, enter on 6, three-sixes forfeit,
- * exact finish, captures with safe-square exemption).
+ * rules locked in `product.mdc` (stacking allowed, enter on 6, capture bonus roll,
+ * three-sixes forfeit, exact finish, captures with safe-square exemption).
  *
  * No React / DOM / fetch imports (see `architecture.mdc`).
  *
@@ -19,6 +19,7 @@
 import {
   HOME_FINISH_INDEX,
   HOME_LENGTH,
+  LAP_LENGTH,
   TRACK_LENGTH,
   advanceAlongTrack,
   getStartTrackIndex,
@@ -60,8 +61,10 @@ export interface GameState {
   readonly dice: DieValue | null;
   /** Count of consecutive sixes already rolled this turn (0–2 — a third 6 forfeits). */
   readonly consecutiveSixes: number;
-  /** Set when all four pieces of a player have finished. */
+  /** First player to place (all four home); set when they finish. */
   readonly winner: PlayerColor | null;
+  /** Finish order (1st, 2nd, …). Game ends when length equals {@link players}. */
+  readonly placements: readonly PlayerColor[];
   /**
    * Die value from the roll that just ended the turn with no move (e.g. failed
    * yard entry). Cleared on the next roll. Lets the UI show the outcome before
@@ -156,6 +159,7 @@ export function createGame(options: CreateGameOptions): GameState {
     dice: null,
     consecutiveSixes: 0,
     winner: null,
+    placements: [],
     lastRoll: null,
   };
 }
@@ -169,14 +173,17 @@ export function createGame(options: CreateGameOptions): GameState {
  * keeping the reducer deterministic. Returns the next state.
  *
  * Rules implemented:
- * - Cannot roll when `phase !== 'roll'` or the game has a winner.
+ * - Cannot roll when `phase !== 'roll'` or {@link isGameOver}.
  * - A third consecutive 6 forfeits the turn immediately (no move).
  * - If no legal move exists after the roll, the turn passes — except on a 6,
  *   which still consumes the consecutive-sixes counter and re-grants `'roll'`.
  */
 export function rollDice(state: GameState, die: DieValue): GameState {
-  if (state.winner !== null) {
+  if (isGameOver(state)) {
     throw new IllegalIntentError('game is over');
+  }
+  if (hasPlayerPlaced(state, activeColor(state))) {
+    throw new IllegalIntentError('finished players do not roll');
   }
   if (state.phase !== 'roll') {
     throw new IllegalIntentError(`cannot roll in phase '${state.phase}'`);
@@ -222,11 +229,14 @@ export function rollDice(state: GameState, die: DieValue): GameState {
 // ---------------------------------------------------------------------------
 
 export function getLegalMoves(state: GameState): readonly LegalMove[] {
-  if (state.phase !== 'move' || state.dice === null || state.winner !== null) {
+  if (state.phase !== 'move' || state.dice === null || isGameOver(state)) {
     return [];
   }
 
   const color = activeColor(state);
+  if (hasPlayerPlaced(state, color)) {
+    return [];
+  }
   const die = state.dice;
   const moves: LegalMove[] = [];
 
@@ -269,7 +279,7 @@ function tryComputeMove(state: GameState, piece: PieceId, die: DieValue): LegalM
   if (to.zone === 'home' && to.index === HOME_FINISH_INDEX) {
     // advanceAlongTrack clamps at finish; verify the die landed exactly here.
     const along = (from.index - getStartTrackIndex(color) + TRACK_LENGTH) % TRACK_LENGTH;
-    const exactSteps = TRACK_LENGTH - along + HOME_FINISH_INDEX;
+    const exactSteps = LAP_LENGTH - along + HOME_FINISH_INDEX;
     if (die !== exactSteps) return null;
   }
   const captures = to.zone === 'track' ? findCaptureVictims(state, color, to) : [];
@@ -316,7 +326,7 @@ export function withSeatKind(
 // ---------------------------------------------------------------------------
 
 export function applyMove(state: GameState, piece: PieceId): GameState {
-  if (state.winner !== null) {
+  if (isGameOver(state)) {
     throw new IllegalIntentError('game is over');
   }
   if (state.phase !== 'move' || state.dice === null) {
@@ -324,6 +334,9 @@ export function applyMove(state: GameState, piece: PieceId): GameState {
   }
   if (piece.color !== activeColor(state)) {
     throw new IllegalIntentError(`piece does not belong to active player`);
+  }
+  if (hasPlayerPlaced(state, piece.color)) {
+    throw new IllegalIntentError('finished players cannot move');
   }
 
   const legal = getLegalMoves(state);
@@ -343,21 +356,31 @@ export function applyMove(state: GameState, piece: PieceId): GameState {
 
   const color = chosen.piece.color;
   const won = playerHasWon(nextBoard, color);
+  const pieceReachedFinish =
+    chosen.to.zone === 'home' && chosen.to.index === HOME_FINISH_INDEX;
+
   if (won) {
-    return {
+    const placements = state.placements.includes(color)
+      ? state.placements
+      : [...state.placements, color];
+    const afterPlace: GameState = {
       ...state,
       board: nextBoard,
-      phase: 'roll',
-      dice: null,
+      placements,
+      winner: state.winner ?? color,
       consecutiveSixes: 0,
-      winner: color,
       lastRoll: null,
     };
+    if (isGameOver(afterPlace)) {
+      return { ...afterPlace, phase: 'roll', dice: null };
+    }
+    return passTurn({ ...afterPlace, phase: 'roll', dice: null });
   }
 
-  // A 6 grants another roll (and the consecutive-sixes counter is already
-  // bumped on `rollDice`). Anything else ends the turn.
-  if (state.dice === 6) {
+  // A 6, capture, or sending a piece to the finish triangle grants another roll.
+  const earnedExtraRoll =
+    state.dice === 6 || chosen.captures.length > 0 || pieceReachedFinish;
+  if (earnedExtraRoll) {
     return {
       ...state,
       board: nextBoard,
@@ -383,7 +406,7 @@ export function applyMove(state: GameState, piece: PieceId): GameState {
  * as the game is still running.
  */
 export function forfeitTurn(state: GameState): GameState {
-  if (state.winner !== null) {
+  if (isGameOver(state)) {
     throw new IllegalIntentError('game is over');
   }
   return passTurn(state);
@@ -394,7 +417,19 @@ export function forfeitTurn(state: GameState): GameState {
 // ---------------------------------------------------------------------------
 
 export function isGameOver(state: GameState): boolean {
-  return state.winner !== null;
+  return state.placements.length >= state.players.length;
+}
+
+export function hasPlayerPlaced(state: GameState, color: PlayerColor): boolean {
+  return state.placements.includes(color);
+}
+
+export function placementRank(
+  state: GameState,
+  color: PlayerColor,
+): number | null {
+  const index = state.placements.indexOf(color);
+  return index === -1 ? null : index + 1;
 }
 
 function playerHasWon(board: BoardState, color: PlayerColor): boolean {
@@ -439,9 +474,17 @@ export function activeSeatKind(state: GameState): PlayerKind {
 }
 
 function passTurn(state: GameState): GameState {
+  const count = state.players.length;
+  let nextIndex = state.activePlayerIndex;
+  for (let step = 0; step < count; step += 1) {
+    nextIndex = (nextIndex + 1) % count;
+    if (!hasPlayerPlaced(state, state.players[nextIndex]!)) {
+      break;
+    }
+  }
   return {
     ...state,
-    activePlayerIndex: (state.activePlayerIndex + 1) % state.players.length,
+    activePlayerIndex: nextIndex,
     phase: 'roll',
     dice: null,
     consecutiveSixes: 0,

@@ -7,6 +7,7 @@ import { chooseMove } from './ai/chooseMove.ts';
 import {
   applyMove,
   forfeitTurn,
+  isGameOver,
   rollDice,
   type DieValue,
   type GameState,
@@ -17,14 +18,14 @@ export function autoPlayCurrentTurn(
   roll: () => DieValue,
   maxSteps = 40,
 ): GameState {
-  if (state.winner !== null) {
+  if (isGameOver(state)) {
     return state;
   }
   const seatIndex = state.activePlayerIndex;
   let current = state;
   let steps = 0;
   while (
-    current.winner === null &&
+    !isGameOver(current) &&
     current.activePlayerIndex === seatIndex &&
     steps++ < maxSteps
   ) {

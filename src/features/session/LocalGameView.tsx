@@ -1,3 +1,4 @@
+import { isGameOver } from '@game/rules';
 import { BoardView, Dice, useDiceFace } from '@/features/board';
 import { randomDie } from './localGameReducer.ts';
 import { Button, Panel } from '@/shared/ui';
@@ -17,6 +18,7 @@ export function LocalGameView({ session }: LocalGameViewProps) {
     dice: game?.dice ?? null,
     lastRoll: game?.lastRoll ?? null,
     canRoll: session.canRoll,
+    resetKey: session.sessionKey,
   });
 
   if (game === null || activeColor === null) {
@@ -25,6 +27,8 @@ export function LocalGameView({ session }: LocalGameViewProps) {
 
   const players = playersForCount(setup.playerCount);
   const winner = game.winner;
+  const canContinueForPlacements =
+    winner !== null && !isGameOver(game) && game.placements.length < players.length;
 
   const handleRoll = (): void => {
     const die = randomDie();
@@ -52,7 +56,7 @@ export function LocalGameView({ session }: LocalGameViewProps) {
             <span className={styles.phaseHint}> — {phaseHint}</span>
           </p>
           <TurnTimer
-            visible={session.isHumanTurn}
+            visible={session.showTurnTimer}
             secondsLeft={session.timerSeconds}
             progress={session.timerProgress}
           />
@@ -63,12 +67,17 @@ export function LocalGameView({ session }: LocalGameViewProps) {
         </div>
 
         <BoardView
+          key={session.sessionKey}
           board={game.board}
           activeColor={activeColor}
           players={players}
           legalPieceKeys={session.legalPieceKeys}
           shakePieceKey={feedback.shakePieceKey}
-          interactive={session.isHumanTurn && game.phase === 'move'}
+          interactive={
+            session.isHumanTurn && game.phase === 'move' && !session.isPieceAnimating
+          }
+          pieceVisuals={session.pieceVisuals}
+          captureFlash={session.captureFlash}
           onPieceSelect={(piece) => session.tryMove(piece)}
         />
 
@@ -93,12 +102,20 @@ export function LocalGameView({ session }: LocalGameViewProps) {
         </div>
       </Panel>
 
-      {winner !== null ? (
+      {session.showWinOverlay && winner !== null ? (
         <WinOverlay
           winner={winner}
+          placements={game.placements}
+          canContinue={canContinueForPlacements}
+          onContinue={session.continueForPlacements}
           onPlayAgain={session.restartGame}
           onNewSetup={session.backToSetup}
         />
+      ) : null}
+      {isGameOver(game) && game.placements.length > 0 ? (
+        <p className={styles.finalStandings} role="status">
+          Final: {game.placements.join(' → ')}
+        </p>
       ) : null}
     </>
   );

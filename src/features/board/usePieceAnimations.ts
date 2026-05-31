@@ -2,24 +2,32 @@ import { pieceKey } from '@game/types';
 import type { BoardState, PieceId, PieceIndex, PlayerColor } from '@game/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePrefersReducedMotion } from '@/shared/hooks';
+import { CAPTURE_DRAG_MS, CAPTURE_FLASH_MS, PIECE_STEP_MS } from './pieceMotion.ts';
 import { buildPieceCoordPath, positionsEqual } from './piecePath.ts';
-import type { GridCoord } from './boardLayout.ts';
+import type { GridCoord, PieceCoord } from './boardLayout.ts';
 
-const STEP_MS = 90;
-const CAPTURE_FLASH_MS = 420;
-const CAPTURE_RETURN_MS = 380;
+export type PieceMotionStyle = 'step' | 'capture-drag';
 
 export interface PieceVisual {
   readonly id: PieceId;
   readonly color: PlayerColor;
   readonly index: PieceIndex;
-  readonly coord: GridCoord;
+  readonly coord: PieceCoord;
   readonly stackIndex: number;
+  readonly motion?: PieceMotionStyle;
+}
+
+export interface UsePieceAnimationsOptions {
+  /** When false, skips diffing and reports `isAnimating: false` (parent drives visuals). */
+  readonly enabled?: boolean;
+  /** Bumps when a new local session starts so piece coords do not leak across games. */
+  readonly resetKey?: number;
 }
 
 export interface UsePieceAnimationsResult {
   readonly pieces: readonly PieceVisual[];
   readonly captureFlash: GridCoord | null;
+  readonly isAnimating: boolean;
 }
 
 function collectPieceIds(board: BoardState, players: readonly PlayerColor[]): PieceId[] {
@@ -36,9 +44,9 @@ function collectPieceIds(board: BoardState, players: readonly PlayerColor[]): Pi
 }
 
 function stackIndexFor(
-  coord: GridCoord,
+  coord: PieceCoord,
   id: PieceId,
-  coordsByPiece: ReadonlyMap<string, GridCoord>,
+  coordsByPiece: ReadonlyMap<string, PieceCoord>,
 ): number {
   const key = `${coord.row},${coord.col}`;
   const sameCell: string[] = [];
@@ -52,17 +60,31 @@ function stackIndexFor(
 }
 
 export function usePieceAnimations(
-  board: BoardState,
+  board: BoardState | null,
   players: readonly PlayerColor[],
+  options: UsePieceAnimationsOptions = {},
 ): UsePieceAnimationsResult {
+  const enabled = options.enabled !== false && board !== null;
+  const resetKey = options.resetKey ?? 0;
   const reducedMotion = usePrefersReducedMotion();
   const prevBoardRef = useRef<BoardState | null>(null);
-  const [visualCoords, setVisualCoords] = useState<ReadonlyMap<string, GridCoord>>(() => new Map());
+  const [visualCoords, setVisualCoords] = useState<ReadonlyMap<string, PieceCoord>>(() => new Map());
   const [captureFlash, setCaptureFlash] = useState<GridCoord | null>(null);
+  const [captureDragKeys, setCaptureDragKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const [isAnimating, setIsAnimating] = useState(false);
   const runIdRef = useRef(0);
 
+  useEffect(() => {
+    prevBoardRef.current = null;
+    setVisualCoords(new Map());
+    setCaptureFlash(null);
+    setCaptureDragKeys(new Set());
+    setIsAnimating(false);
+    runIdRef.current += 1;
+  }, [resetKey]);
+
   const syncStaticCoords = useCallback((targetBoard: BoardState) => {
-    const next = new Map<string, GridCoord>();
+    const next = new Map<string, PieceCoord>();
     for (const id of collectPieceIds(targetBoard, players)) {
       const pos = targetBoard.positions[pieceKey(id)];
       if (pos === undefined) continue;
@@ -76,10 +98,19 @@ export function usePieceAnimations(
   }, [players]);
 
   useEffect(() => {
+    if (!enabled || board === null) {
+      prevBoardRef.current = null;
+      setIsAnimating(false);
+      setCaptureFlash(null);
+      setCaptureDragKeys(new Set());
+      return;
+    }
+
     const prev = prevBoardRef.current;
     prevBoardRef.current = board;
 
     if (prev === null) {
+      setIsAnimating(false);
       syncStaticCoords(board);
       return;
     }
@@ -88,9 +119,9 @@ export function usePieceAnimations(
     const prevIds = collectPieceIds(prev, players);
     const animations: {
       id: PieceId;
-      path: GridCoord[];
+      path: PieceCoord[];
       captureFlashAt: GridCoord | null;
-      isCaptureReturn: boolean;
+      mode: 'step' | 'drag';
     }[] = [];
 
     for (const id of prevIds) {
@@ -103,21 +134,32 @@ export function usePieceAnimations(
       const path = buildPieceCoordPath(id.color, id.index, fromPos, toPos);
       const isCaptureReturn = fromPos.zone === 'track' && toPos.zone === 'yard';
       const captureFlashAt =
-        isCaptureReturn && path[0] !== undefined ? path[0] : null;
-      animations.push({ id, path, captureFlashAt, isCaptureReturn });
+        isCaptureReturn && path[0] !== undefined
+          ? ({ row: Math.floor(path[0].row), col: Math.floor(path[0].col) } satisfies GridCoord)
+          : null;
+      animations.push({
+        id,
+        path,
+        captureFlashAt,
+        mode: isCaptureReturn ? 'drag' : 'step',
+      });
     }
 
     if (animations.length === 0) {
+      setIsAnimating(false);
       syncStaticCoords(board);
       return;
     }
 
     if (reducedMotion) {
+      setIsAnimating(false);
       syncStaticCoords(board);
       return;
     }
 
-    const startCoords = new Map<string, GridCoord>();
+    setIsAnimating(true);
+
+    const startCoords = new Map<string, PieceCoord>();
     for (const id of collectPieceIds(board, players)) {
       const pos = board.positions[pieceKey(id)];
       if (pos === undefined) continue;
@@ -141,6 +183,60 @@ export function usePieceAnimations(
         globalThis.setTimeout(resolve, ms);
       });
 
+    /** Let React commit coords before the CSS step transition runs. */
+    const waitForPaint = (): Promise<void> =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => resolve());
+        });
+      });
+
+    const runStepAnimations = async (stepAnims: typeof animations): Promise<void> => {
+      const maxLen = Math.max(...stepAnims.map((a) => a.path.length), 1);
+      for (let step = 1; step < maxLen; step += 1) {
+        if (runId !== runIdRef.current) return;
+
+        setVisualCoords((current) => {
+          const next = new Map(current);
+          for (const anim of stepAnims) {
+            const coord =
+              anim.path[step] ?? anim.path[Math.min(step, anim.path.length - 1)];
+            if (coord !== undefined) {
+              next.set(pieceKey(anim.id), coord);
+            }
+          }
+          return next;
+        });
+
+        await waitForPaint();
+        await sleep(PIECE_STEP_MS);
+      }
+    };
+
+    const runDragAnimations = async (dragAnims: typeof animations): Promise<void> => {
+      if (dragAnims.length === 0) return;
+
+      const dragKeys = new Set(dragAnims.map((a) => pieceKey(a.id)));
+      setCaptureDragKeys(dragKeys);
+
+      setVisualCoords((current) => {
+        const next = new Map(current);
+        for (const anim of dragAnims) {
+          const end = anim.path.at(-1);
+          if (end !== undefined) {
+            next.set(pieceKey(anim.id), end);
+          }
+        }
+        return next;
+      });
+
+      await waitForPaint();
+      await sleep(CAPTURE_DRAG_MS);
+
+      if (runId !== runIdRef.current) return;
+      setCaptureDragKeys(new Set());
+    };
+
     void (async () => {
       const flash = animations.find((a) => a.captureFlashAt !== null)?.captureFlashAt ?? null;
       if (flash !== null && !reducedMotion) {
@@ -150,49 +246,37 @@ export function usePieceAnimations(
         setCaptureFlash(null);
       }
 
-      const maxLen = Math.max(...animations.map((a) => a.path.length), 1);
-      for (let step = 1; step < maxLen; step += 1) {
-        if (runId !== runIdRef.current) return;
+      const stepAnims = animations.filter((a) => a.mode === 'step');
+      const dragAnims = animations.filter((a) => a.mode === 'drag');
 
-        setVisualCoords((current) => {
-          const next = new Map(current);
-          for (const anim of animations) {
-            const coord = anim.path[Math.min(step, anim.path.length - 1)];
-            if (coord !== undefined) {
-              next.set(pieceKey(anim.id), coord);
-            }
-          }
-          return next;
-        });
-
-        const stepDuration = reducedMotion
-          ? 0
-          : animations.some((a) => a.isCaptureReturn)
-            ? CAPTURE_RETURN_MS
-            : STEP_MS;
-        if (stepDuration > 0) {
-          await sleep(stepDuration);
-        }
-      }
+      await Promise.all([runStepAnimations(stepAnims), runDragAnimations(dragAnims)]);
 
       if (runId !== runIdRef.current) return;
+      setCaptureDragKeys(new Set());
       syncStaticCoords(board);
+      setIsAnimating(false);
     })();
-  }, [board, players, reducedMotion, syncStaticCoords]);
+  }, [board, players, reducedMotion, syncStaticCoords, enabled]);
 
   const pieces: PieceVisual[] = [];
   const coordMap = visualCoords;
+  if (!enabled || board === null) {
+    return { pieces, captureFlash, isAnimating: false };
+  }
+
   for (const id of collectPieceIds(board, players)) {
     const coord = coordMap.get(pieceKey(id));
     if (coord === undefined) continue;
+    const key = pieceKey(id);
     pieces.push({
       id,
       color: id.color,
       index: id.index,
       coord,
       stackIndex: Math.max(0, stackIndexFor(coord, id, coordMap)),
+      motion: captureDragKeys.has(key) ? 'capture-drag' : undefined,
     });
   }
 
-  return { pieces, captureFlash };
+  return { pieces, captureFlash, isAnimating };
 }

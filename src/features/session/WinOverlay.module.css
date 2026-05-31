@@ -38,9 +38,35 @@
 }
 
 .subtitle {
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-3);
   color: var(--color-text-muted);
   font-size: 0.9375rem;
+}
+
+.standings {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  text-align: left;
+}
+
+.standings li {
+  padding: var(--space-1) 0;
+  text-transform: capitalize;
+}
+
+.standings li[data-color='red'] {
+  color: var(--color-player-red);
+}
+.standings li[data-color='green'] {
+  color: var(--color-player-green);
+}
+.standings li[data-color='yellow'] {
+  color: var(--color-player-yellow);
+}
+.standings li[data-color='blue'] {
+  color: var(--color-player-blue);
 }
 
 .actions {

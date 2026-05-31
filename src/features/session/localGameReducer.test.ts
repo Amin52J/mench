@@ -15,6 +15,19 @@ describe('localGameReducer', () => {
     expect(activeColor(state!)).toBe('red');
   });
 
+  it('restart clears winner and placements', () => {
+    const setup = defaultSetup(2);
+    const started = localGameReducer(null, { type: 'start', setup });
+    const ended = {
+      ...started!,
+      winner: 'red' as const,
+      placements: ['red' as const],
+    };
+    const restarted = localGameReducer(ended, { type: 'restart', setup });
+    expect(restarted?.winner).toBeNull();
+    expect(restarted?.placements).toEqual([]);
+  });
+
   it('resets to null', () => {
     const setup = defaultSetup(2);
     const started = localGameReducer(null, { type: 'start', setup });

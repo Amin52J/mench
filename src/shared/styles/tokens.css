@@ -14,6 +14,7 @@
   --color-board-track-safe: #ececec;
   --color-board-outline: #374151;
   --color-board-center: #fafaf9;
+  --color-board-yard-well: #ffffff;
   --color-piece-outline: #1f2937;
   --color-surface: #ffffff;
   --color-text: #111827;
@@ -32,6 +33,10 @@
   --motion-fast: 120ms;
   --motion-normal: 220ms;
   --motion-slow: 360ms;
+  /** Piece hop along board cells; keep in sync with `pieceMotion.ts` `PIECE_STEP_MS`. */
+  --piece-step-duration: 260ms;
+  /** Capture knock-home drag; keep in sync with `pieceMotion.ts` `CAPTURE_DRAG_MS`. */
+  --piece-drag-duration: 580ms;
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 
   --board-max-size: min(92vw, 92dvh, 28rem);

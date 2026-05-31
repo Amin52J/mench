@@ -33,6 +33,7 @@ describe('createGame', () => {
     expect(game.dice).toBeNull();
     expect(game.consecutiveSixes).toBe(0);
     expect(game.winner).toBeNull();
+    expect(game.placements).toEqual([]);
     expect(activeColor(game)).toBe('red');
     for (const color of game.players) {
       for (let i = 0; i < 4; i++) {
@@ -194,6 +195,30 @@ describe('captures', () => {
     const next = applyMove(rolled, pid('red', 0));
     expect(next.board.positions[pieceKey(pid('green', 0))]).toEqual({ zone: 'yard' });
     expect(next.board.positions[pieceKey(pid('red', 0))]).toEqual({ zone: 'track', index: 7 });
+    expect(next.phase).toBe('roll');
+    expect(next.dice).toBeNull();
+    expect(activeColor(next)).toBe('red');
+  });
+
+  it('does not grant a bonus roll without a capture', () => {
+    let game = createGame({ players: ['red', 'green'] });
+    game = placePieces(game, {
+      red: [
+        { zone: 'track', index: 4 },
+        { zone: 'yard' },
+        { zone: 'yard' },
+        { zone: 'yard' },
+      ],
+      green: [
+        { zone: 'track', index: 20 },
+        { zone: 'yard' },
+        { zone: 'yard' },
+        { zone: 'yard' },
+      ],
+    });
+    const next = applyMove(withDie(game, 3), pid('red', 0));
+    expect(next.phase).toBe('roll');
+    expect(activeColor(next)).toBe('green');
   });
 
   it('captures every opponent on the landing square', () => {
@@ -273,10 +298,10 @@ describe('exact finish', () => {
 
   it('only allows finishing from the track with the exact die', () => {
     let game = createGame({ players: ['red', 'green'] });
-    // Red gate cell is 51 (one before start 0); from there 6 = finish.
+    // Red last lap cell is 50; from there 6 = finish (1 into home + 5 in column).
     game = placePieces(game, {
       red: [
-        { zone: 'track', index: 51 },
+        { zone: 'track', index: 50 },
         { zone: 'yard' },
         { zone: 'yard' },
         { zone: 'yard' },
@@ -385,24 +410,83 @@ describe('extra turn on six & three-sixes forfeit', () => {
   });
 });
 
+// ---------- finish bonus roll -----------------------------------------------
+
+describe('finish bonus roll', () => {
+  it('grants a bonus roll when a piece reaches the finish triangle', () => {
+    let game = createGame({ players: ['red', 'green'] });
+    game = placePieces(game, {
+      red: [
+        { zone: 'home', index: 3 },
+        { zone: 'yard' },
+        { zone: 'yard' },
+        { zone: 'yard' },
+      ],
+    });
+    const next = applyMove(withDie(game, 2), pid('red', 0));
+    expect(next.board.positions[pieceKey(pid('red', 0))]).toEqual({
+      zone: 'home',
+      index: HOME_FINISH_INDEX,
+    });
+    expect(next.phase).toBe('roll');
+    expect(activeColor(next)).toBe('red');
+  });
+});
+
 // ---------- win detection ---------------------------------------------------
 
 describe('win detection', () => {
-  it('declares a winner when the last piece reaches finish', () => {
+  it('records first place but keeps playing for placements in 3+ seats', () => {
+    let game = createGame({ players: ['red', 'green', 'yellow'] });
+    game = placePieces(game, {
+      red: [
+        { zone: 'home', index: HOME_FINISH_INDEX },
+        { zone: 'home', index: HOME_FINISH_INDEX },
+        { zone: 'home', index: HOME_FINISH_INDEX },
+        { zone: 'home', index: 4 },
+      ],
+    });
+    const next = applyMove(withDie(game, 1), pid('red', 3));
+    expect(next.winner).toBe('red');
+    expect(next.placements).toEqual(['red']);
+    expect(isGameOver(next)).toBe(false);
+    expect(activeColor(next)).toBe('green');
+    game = placePieces(next, {
+      green: [
+        { zone: 'track', index: 13 },
+        { zone: 'yard' },
+        { zone: 'yard' },
+        { zone: 'yard' },
+      ],
+    });
+    expect(getLegalMoves(withDie(game, 3)).length).toBeGreaterThan(0);
+  });
+
+  it('records first place in a 2-seat game but others may still place', () => {
     let game = createGame({ players: ['red', 'green'] });
     game = placePieces(game, {
       red: [
         { zone: 'home', index: HOME_FINISH_INDEX },
         { zone: 'home', index: HOME_FINISH_INDEX },
         { zone: 'home', index: HOME_FINISH_INDEX },
-        { zone: 'home', index: 4 }, // 1 step from finish
+        { zone: 'home', index: 4 },
       ],
     });
-    const rolled = withDie(game, 1);
-    const next = applyMove(rolled, pid('red', 3));
+    const next = applyMove(withDie(game, 1), pid('red', 3));
     expect(next.winner).toBe('red');
-    expect(isGameOver(next)).toBe(true);
-    expect(() => rollDice(next, 6)).toThrow(IllegalIntentError);
+    expect(next.placements).toEqual(['red']);
+    expect(isGameOver(next)).toBe(false);
+  });
+
+  it('blocks rolls once every seat has placed', () => {
+    const game = createGame({ players: ['red', 'green'] });
+    const done = {
+      ...game,
+      winner: 'red' as const,
+      placements: ['red', 'green'] as const,
+    };
+    expect(isGameOver(done)).toBe(true);
+    expect(() => rollDice(done, 6)).toThrow(IllegalIntentError);
   });
 });
 

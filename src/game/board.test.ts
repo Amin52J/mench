@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   HOME_FINISH_INDEX,
+  LAP_LENGTH,
   SAFE_TRACK_INDICES,
   START_TRACK_INDEX,
   TRACK_LENGTH,
   TRACK_RENDER_ORDER,
   advanceAlongTrack,
-  getHomeGateTrackIndex,
+  getLastLapTrackIndex,
+  getPreStartTrackIndex,
   getStartTrackIndex,
   isInHomeStretch,
+  isPreStartTrackForColor,
   isSafeTrackIndex,
   renderOrderToTrackIndex,
   stepsToFinish,
@@ -35,10 +38,13 @@ describe('track layout', () => {
     expect(isSafeTrackIndex(1)).toBe(false);
   });
 
-  it('uses edge indices 0 and 51', () => {
+  it('uses start at along 0 and pre-start at along 51 (red only skips pre-start)', () => {
     expect(trackStepsFromStart('red', 0)).toBe(0);
     expect(trackStepsFromStart('red', 51)).toBe(51);
-    expect(getHomeGateTrackIndex('red')).toBe(51);
+    expect(getPreStartTrackIndex('red')).toBe(51);
+    expect(getLastLapTrackIndex('red')).toBe(50);
+    expect(isPreStartTrackForColor('red', 51)).toBe(true);
+    expect(isPreStartTrackForColor('blue', 51)).toBe(false);
   });
 });
 
@@ -57,10 +63,11 @@ describe('per-color entry offsets', () => {
     },
   );
 
-  it('places home gate one step before start (clockwise)', () => {
+  it('places pre-start one step before each start (clockwise)', () => {
     for (const color of PLAYER_COLORS) {
       const start = getStartTrackIndex(color);
-      expect(getHomeGateTrackIndex(color)).toBe((start + TRACK_LENGTH - 1) % TRACK_LENGTH);
+      expect(getPreStartTrackIndex(color)).toBe((start + TRACK_LENGTH - 1) % TRACK_LENGTH);
+      expect(getLastLapTrackIndex(color)).toBe((start + LAP_LENGTH - 1) % TRACK_LENGTH);
     }
   });
 });
@@ -71,13 +78,19 @@ describe('advanceAlongTrack', () => {
     expect(pos).toEqual({ zone: 'track', index: 3 });
   });
 
-  it('enters home from the gate cell in one step', () => {
-    expect(getHomeGateTrackIndex('green')).toBe(12);
+  it('never lands same-color pieces on the pre-start cell', () => {
+    expect(getPreStartTrackIndex('blue')).toBe(38);
+    const fromLastLap = advanceAlongTrack('blue', { zone: 'track', index: 37 }, 1);
+    expect(fromLastLap).toEqual({ zone: 'home', index: 0 });
+    expect(fromLastLap.zone === 'track' && fromLastLap.index === 38).toBe(false);
+  });
 
-    const atGate = advanceAlongTrack('green', { zone: 'track', index: 12 }, 0);
-    expect(atGate).toEqual({ zone: 'track', index: 12 });
+  it('enters home from the last lap cell in one step (skips pre-start)', () => {
+    const lastLap = getLastLapTrackIndex('green');
+    expect(lastLap).toBe(11);
+    expect(getPreStartTrackIndex('green')).toBe(12);
 
-    const intoHome = advanceAlongTrack('green', { zone: 'track', index: 12 }, 1);
+    const intoHome = advanceAlongTrack('green', { zone: 'track', index: lastLap }, 1);
     expect(intoHome).toEqual({ zone: 'home', index: 0 });
   });
 
@@ -94,12 +107,12 @@ describe('advanceAlongTrack', () => {
 
 describe('stepsToFinish', () => {
   it('counts from yard through track and home', () => {
-    expect(stepsToFinish('red', { zone: 'yard' })).toBe(57);
+    expect(stepsToFinish('red', { zone: 'yard' })).toBe(56);
   });
 
   it('decreases along track and home', () => {
-    expect(stepsToFinish('blue', { zone: 'track', index: 39 })).toBe(57);
-    expect(stepsToFinish('blue', { zone: 'track', index: 38 })).toBe(6);
+    expect(stepsToFinish('blue', { zone: 'track', index: 39 })).toBe(56);
+    expect(stepsToFinish('blue', { zone: 'track', index: getLastLapTrackIndex('blue') })).toBe(6);
     expect(stepsToFinish('blue', { zone: 'home', index: 0 })).toBe(5);
     expect(stepsToFinish('blue', { zone: 'home', index: HOME_FINISH_INDEX })).toBe(0);
   });

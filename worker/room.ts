@@ -10,6 +10,7 @@ import {
   activeSeatKind,
   applyIntent,
   IllegalIntentError,
+  isGameOver,
   withSeatKind,
   type GameIntent,
   type GameState,
@@ -17,7 +18,7 @@ import {
 import { createGame } from '@game/rules';
 import { chooseMove } from '@game/ai';
 import type { PlayerColor, PlayerKind } from '@game/types';
-import { PLAYER_COLORS } from '@game/types';
+import { PLAYER_COLORS, turnTimerApplies } from '@game/types';
 
 import {
   DEFAULT_ONLINE_SETUP,
@@ -807,7 +808,11 @@ export class GameRoom implements DurableObject {
       void this.ctx.storage.deleteAlarm();
       return;
     }
-    if (this.game.winner !== null || activeSeatKind(this.game) !== 'human') {
+    if (
+      isGameOver(this.game) ||
+      activeSeatKind(this.game) !== 'human' ||
+      !turnTimerApplies(this.game.seatKinds)
+    ) {
       this.turnDeadline = null;
       void this.ctx.storage.deleteAlarm();
       return;
@@ -822,7 +827,7 @@ export class GameRoom implements DurableObject {
       this.cpuTimer = null;
     }
     if (this.game === null) return;
-    if (this.game.winner !== null) return;
+    if (isGameOver(this.game)) return;
     if (activeSeatKind(this.game) !== 'cpu') return;
 
     const snapshot = this.game;
@@ -858,7 +863,7 @@ export class GameRoom implements DurableObject {
     let guard = 0;
     while (
       this.game !== null &&
-      this.game.winner === null &&
+      !isGameOver(this.game) &&
       this.game.activePlayerIndex === seatIndex &&
       this.game.seatKinds[seatIndex] === 'human' &&
       guard++ < 40

@@ -18,6 +18,9 @@ alwaysApply: false
 | Movement | Move one piece forward by die value; choose among legal moves |
 | Stacking | Multiple pieces (same or different players) may occupy the same track or home-column cell; yard uses separate slots per piece |
 | Extra turn | Rolling **6** grants another roll (after moving if a legal move exists) |
+| Capture bonus | Sending opponent(s) home from a capture grants **one** bonus roll (same as a 6; does not stack to two rolls if both apply) |
+| Finish bonus | Moving a piece onto the finish triangle grants **one** bonus roll (same stacking rule as capture) |
+| Placements | First player to get all four home is **1st**; others may **continue** for 2nd–4th before the session ends |
 | Three sixes | Third **6** in a row: turn ends, no move on that third roll |
 | Captures | Landing on opponent(s) on a non-safe track square sends **all** opponent pieces on that square home |
 | Safe squares | Star/marked squares — no capture |

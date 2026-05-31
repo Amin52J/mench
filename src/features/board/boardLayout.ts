@@ -5,12 +5,18 @@
  * start square (top-left yard on the rendered board).
  */
 
-import { SAFE_TRACK_INDICES, START_TRACK_INDEX } from '@game/board';
+import { HOME_FINISH_INDEX, SAFE_TRACK_INDICES, START_TRACK_INDEX } from '@game/board';
 import { PLAYER_COLORS, type PiecePosition, type PlayerColor } from '@game/types';
 
 export const GRID_SIZE = 15;
 
 export interface GridCoord {
+  readonly row: number;
+  readonly col: number;
+}
+
+/** Piece center on the grid; may be fractional between cell centers. */
+export interface PieceCoord {
   readonly row: number;
   readonly col: number;
 }
@@ -32,11 +38,12 @@ const JAVA_HOME_FLAT: Readonly<Record<PlayerColor, readonly number[]>> = {
   blue: [118, 117, 116, 115, 114, 113],
 };
 
+/** 2×2 yard slots in the 3rd and 4th columns of each 6×6 corner (see `YARD_GRID`). */
 const JAVA_YARD_FLAT: Readonly<Record<PlayerColor, readonly number[]>> = {
-  red: [166, 167, 181, 182],
-  green: [31, 32, 46, 47],
-  yellow: [43, 42, 58, 57],
-  blue: [178, 177, 193, 192],
+  red: [167, 168, 182, 183],
+  green: [32, 33, 47, 48],
+  yellow: [42, 41, 56, 57],
+  blue: [177, 176, 192, 191],
 };
 
 export const TRACK_GRID: readonly GridCoord[] = Array.from(
@@ -79,7 +86,9 @@ export type CellKind =
   | 'empty'
   | 'track'
   | 'track-safe'
-  | 'yard'
+  | 'track-start'
+  | 'yard-fill'
+  | 'yard-slot'
   | 'home'
   | 'center';
 
@@ -98,26 +107,47 @@ function coordKey({ row, col }: GridCoord): string {
   return `${row},${col}`;
 }
 
+function startColorForTrackIndex(trackIndex: number): PlayerColor | undefined {
+  for (const color of PLAYER_COLORS) {
+    if (START_TRACK_INDEX[color] === trackIndex) {
+      return color;
+    }
+  }
+  return undefined;
+}
+
 function buildCellLookup(): Map<string, BoardCellModel> {
   const map = new Map<string, BoardCellModel>();
 
   for (let trackIndex = 0; trackIndex < TRACK_GRID.length; trackIndex++) {
     const coord = TRACK_GRID[trackIndex]!;
-    const kind: CellKind = SAFE_TRACK_INDICES.has(trackIndex) ? 'track-safe' : 'track';
-    map.set(coordKey(coord), { kind, trackIndex });
+    const startColor = startColorForTrackIndex(trackIndex);
+    const kind: CellKind =
+      startColor !== undefined
+        ? 'track-start'
+        : SAFE_TRACK_INDICES.has(trackIndex)
+          ? 'track-safe'
+          : 'track';
+    map.set(coordKey(coord), {
+      kind,
+      trackIndex,
+      ...(startColor !== undefined ? { color: startColor } : {}),
+    });
   }
 
   for (const color of PLAYER_COLORS) {
+    const slotKeys = new Set(YARD_GRID[color].map((coord) => coordKey(coord)));
     for (let homeIndex = 0; homeIndex < HOME_GRID[color].length; homeIndex++) {
       map.set(coordKey(HOME_GRID[color][homeIndex]!), { kind: 'home', color, homeIndex });
     }
     for (const coord of yardCellsFor(color)) {
-      map.set(coordKey(coord), { kind: 'yard', color });
+      const kind: CellKind = slotKeys.has(coordKey(coord)) ? 'yard-slot' : 'yard-fill';
+      map.set(coordKey(coord), { kind, color });
     }
   }
 
   for (const coord of CENTER_CELLS) {
-    map.set(coordKey(coord), { kind: 'center', color: centerColorFor(coord) });
+    map.set(coordKey(coord), { kind: 'center' });
   }
 
   return map;
@@ -141,21 +171,42 @@ function yardCellsFor(color: PlayerColor): GridCoord[] {
   return cells;
 }
 
-const CENTER_CELLS: readonly GridCoord[] = [
-  { row: 7, col: 6 },
-  { row: 7, col: 7 },
-  { row: 7, col: 8 },
-  { row: 6, col: 7 },
-  { row: 8, col: 7 },
-];
+/** Inclusive origin of the 3×3 center hub (rows/cols 6–8 on the 15×15 grid). */
+export const CENTER_HUB_ORIGIN = { row: 6, col: 6 } as const;
+export const CENTER_HUB_SIZE = 3;
 
-function centerColorFor({ row, col }: GridCoord): PlayerColor | undefined {
-  if (row === 7 && col === 6) return 'red';
-  if (row === 6 && col === 7) return 'green';
-  if (row === 7 && col === 8) return 'yellow';
-  if (row === 8 && col === 7) return 'blue';
-  return undefined;
+/** Centroid of each color's finish triangle in the 3×3 hub (matches `CENTER_TRIANGLES`). */
+export const FINISH_POSITION_BY_COLOR: Readonly<Record<PlayerColor, PieceCoord>> = {
+  red: { row: 7.5, col: 6.5 },
+  green: { row: 6.5, col: 7.5 },
+  yellow: { row: 7.5, col: 8.5 },
+  blue: { row: 8.5, col: 7.5 },
+};
+
+export function finishPosition(color: PlayerColor): PieceCoord {
+  return FINISH_POSITION_BY_COLOR[color];
 }
+
+/** Colored finish triangles (apex at hub center, base on each side). */
+export const CENTER_TRIANGLES: ReadonlyArray<{
+  readonly color: PlayerColor;
+  readonly side: 'top' | 'right' | 'bottom' | 'left';
+}> = [
+  { color: 'green', side: 'top' },
+  { color: 'yellow', side: 'right' },
+  { color: 'blue', side: 'bottom' },
+  { color: 'red', side: 'left' },
+] as const;
+
+const CENTER_CELLS: readonly GridCoord[] = (() => {
+  const cells: GridCoord[] = [];
+  for (let r = CENTER_HUB_ORIGIN.row; r < CENTER_HUB_ORIGIN.row + CENTER_HUB_SIZE; r++) {
+    for (let c = CENTER_HUB_ORIGIN.col; c < CENTER_HUB_ORIGIN.col + CENTER_HUB_SIZE; c++) {
+      cells.push({ row: r, col: c });
+    }
+  }
+  return cells;
+})();
 
 export const CELL_LOOKUP = buildCellLookup();
 
@@ -167,15 +218,27 @@ export function positionToCoord(
   color: PlayerColor,
   pieceIndex: number,
   position: PiecePosition,
-): GridCoord | null {
+): PieceCoord | null {
   switch (position.zone) {
     case 'yard':
       return yardSlotCoord(color, pieceIndex);
-    case 'track':
-      return TRACK_GRID[position.index] ?? null;
+    case 'track': {
+      const cell = TRACK_GRID[position.index];
+      return cell === undefined ? null : cellCenter(cell);
+    }
     case 'home':
-      return HOME_GRID[color][position.index] ?? null;
+      if (position.index === HOME_FINISH_INDEX) {
+        return finishPosition(color);
+      }
+      return cellCenter(HOME_GRID[color][position.index] ?? null);
   }
+}
+
+export function cellCenter(cell: GridCoord | null | undefined): PieceCoord | null {
+  if (cell === null || cell === undefined) {
+    return null;
+  }
+  return { row: cell.row + 0.5, col: cell.col + 0.5 };
 }
 
 /** Yard slot for a piece index (2×2 within the 6×6 corner). */

@@ -3,6 +3,7 @@ import {
   applyMove,
   createGame,
   getLegalMoves,
+  isGameOver,
   rollDice,
   type DieValue,
   type GameState,
@@ -46,7 +47,7 @@ export function useAnimationPlayground(): AnimationPlaygroundState {
     game,
     activeColor: activeColor(game),
     legalMoves,
-    canRoll: game.phase === 'roll' && game.winner === null,
+    canRoll: game.phase === 'roll' && !isGameOver(game),
     roll,
     move,
   };

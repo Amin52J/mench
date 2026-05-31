@@ -59,6 +59,54 @@ Workers alone cannot remember which tab belongs to which half-finished game. A *
 | `pnpm check:lint` | ESLint |
 | `pnpm check:pwa` | Manifest + service worker checks (needs `pnpm preview` running) |
 | `pnpm test` | Vitest (unit tests) |
+| `pnpm deploy` | Production build + `wrangler deploy --env production` |
+
+## Production deploy (Cloudflare)
+
+One **Worker** serves the built SPA (`dist/`) and `/api/*` on the same origin so WebSockets and `fetch('/api/…')` work without extra CORS setup. **Durable Objects** use the same bindings as local dev (`wrangler.toml`).
+
+### Account setup (first time)
+
+1. Create a [Cloudflare account](https://dash.cloudflare.com/sign-up) (free tier is enough).
+2. Log in Wrangler on your machine:
+
+   ```bash
+   pnpm exec wrangler login
+   ```
+
+3. Confirm the account:
+
+   ```bash
+   pnpm exec wrangler whoami
+   ```
+
+No secrets are required for v1. Optional: add a custom domain in the dashboard later and uncomment `routes` under `[env.production]` in `wrangler.toml`.
+
+### Deploy
+
+```bash
+pnpm deploy
+```
+
+This runs `pnpm build` then `wrangler deploy --env production`. Wrangler prints the live URL (default `https://mench.<your-subdomain>.workers.dev` unless you configure a route).
+
+Compile-only check (no upload):
+
+```bash
+pnpm build
+pnpm exec wrangler deploy --env production --dry-run
+```
+
+### Production smoke checklist
+
+Run these against the deployed URL (desktop + phone on cellular/Wi‑Fi):
+
+1. **Health** — `curl -s https://<your-host>/api/health` returns `{"ok":true,...}`.
+2. **Create room** — open the app → Online → host a room; note join code / share link.
+3. **Join from phone** — open the share link on a second device; both reach lobby or board.
+4. **One timed turn** — start the game; human seat rolls and moves once; 30s timer visible and server accepts the intent.
+
+Custom domain is optional (see `wrangler.toml` `[env.production]` comments).
 
 ### API smoke test (local Worker)
 

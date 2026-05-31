@@ -11,7 +11,8 @@
     "check:lint": "eslint .",
     "check:pwa": "node scripts/verify-pwa.mjs",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "pnpm build && wrangler deploy --env production"
   },
   "dependencies": {
     "react": "^19.1.0",

@@ -67,7 +67,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 
 ---
 
-## Wave 5 — PWA & production deploy ⬜
+## Wave 5 — PWA & production deploy ✅
 
 **Wave goal:** Installable PWA and production deploy via Wrangler to Cloudflare.
 
@@ -77,7 +77,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 2. `pnpm deploy` publishes Pages + Worker + DO bindings.
 3. Production smoke: create room, join from phone, complete one timed human turn.
 
-**Phases:** 5.1 ✅ · 5.2 ⬜
+**Phases:** 5.1 ✅ · 5.2 ✅
 
 ---
 

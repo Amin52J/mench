@@ -18,5 +18,28 @@ bindings = [{ name = "GAME_ROOM", class_name = "GameRoom" }]
 tag = "v1"
 new_sqlite_classes = ["GameRoom"]
 
+# SPA from `pnpm build` — same origin as `/api/*` (no CORS split in production).
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
 [dev]
 port = 8787
+
+# Production (`pnpm deploy` → `wrangler deploy --env production`).
+[env.production]
+# Optional custom domain after the zone is on your account:
+# routes = [{ pattern = "play.example.com", custom_domain = true }]
+
+[env.production.durable_objects]
+bindings = [{ name = "GAME_ROOM", class_name = "GameRoom" }]
+
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]
+
+[env.production.assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"

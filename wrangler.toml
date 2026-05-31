@@ -1,6 +1,14 @@
 name = "mench"
 main = "worker/index.ts"
 compatibility_date = "2024-11-12"
+# Wrangler/esbuild does not read tsconfig paths; mirror @game/* from tsconfig.worker.json.
+tsconfig = "tsconfig.worker.json"
+
+[alias]
+"@game/rules" = "./src/game/rules.ts"
+"@game/ai" = "./src/game/ai/index.ts"
+"@game/types" = "./src/game/types.ts"
+"@game/online/protocol.ts" = "./src/game/online/protocol.ts"
 
 # Free-tier dev defaults; DO uses SQLite storage class (current Wrangler default).
 [durable_objects]

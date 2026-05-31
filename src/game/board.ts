@@ -2,7 +2,9 @@
  * Board coordinate system (standard international Ludo)
  *
  * - **Shared track:** 52 cells, indices `0..51`, numbered **clockwise** around the outer path.
- * - **Entry / start squares:** Red `0`, Green `13`, Yellow `26`, Blue `39` (13 cells apart).
+ * - **Entry / start squares:** Red `0`, Green `13`, Yellow `26`, Blue `39` (13 cells apart on
+ *   the shared loop). Rendered corners: red top-left, green top-right, yellow bottom-right,
+ *   blue bottom-left (`boardLayout.ts`).
  * - **Home column:** per color, indices `0..5` where `0` is the first home square off the track
  *   and `5` is the finished center triangle.
  * - **Safe track cells:** each start square plus the star square 8 steps ahead (clockwise).

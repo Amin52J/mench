@@ -9,8 +9,8 @@ import {
 
 describe('session setup helpers', () => {
   it('maps player count to clockwise colors', () => {
-    expect(playersForCount(2)).toEqual(['red', 'green']);
-    expect(playersForCount(4)).toEqual(['red', 'green', 'yellow', 'blue']);
+    expect(playersForCount(2)).toEqual(['blue', 'red']);
+    expect(playersForCount(4)).toEqual(['blue', 'red', 'green', 'yellow']);
   });
 
   it('pads seats when normalizing', () => {

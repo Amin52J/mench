@@ -13,13 +13,13 @@ import { chooseMove } from './chooseMove.ts';
 import { SEARCH, scoreMovesWithLookahead } from './search.ts';
 import { scoreMove } from './score.ts';
 
-const PLAYERS: readonly PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
+const TEST_FOUR_PLAYERS: readonly PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
 
 function makeGame(
   overrides: Partial<Omit<GameState, 'players' | 'seatKinds' | 'board'>> = {},
 ): GameState {
   const base = createGame({
-    players: PLAYERS,
+    players: TEST_FOUR_PLAYERS,
     seatKinds: ['cpu', 'cpu', 'cpu', 'cpu'],
   });
   return { ...base, ...overrides };

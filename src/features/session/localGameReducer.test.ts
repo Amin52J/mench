@@ -9,10 +9,10 @@ describe('localGameReducer', () => {
     let state = localGameReducer(null, { type: 'start', setup });
     expect(state).not.toBeNull();
     expect(state!.seatKinds).toEqual(['human', 'human']);
-    expect(activeColor(state!)).toBe('red');
+    expect(activeColor(state!)).toBe('blue');
 
     state = localGameReducer(state, { type: 'forfeit' });
-    expect(activeColor(state!)).toBe('green');
+    expect(activeColor(state!)).toBe('red');
   });
 
   it('resets to null', () => {
@@ -25,8 +25,7 @@ describe('localGameReducer', () => {
     const setup = defaultSetup(2);
     const game = createGame({ players: ['red', 'green'] });
     const restarted = localGameReducer(game, { type: 'restart', setup });
-    expect(restarted?.board.positions).toEqual(
-      createGame({ players: ['red', 'green'] }).board.positions,
-    );
+    const fresh = localGameReducer(null, { type: 'start', setup });
+    expect(restarted?.board.positions).toEqual(fresh!.board.positions);
   });
 });

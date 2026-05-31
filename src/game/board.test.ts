@@ -43,7 +43,12 @@ describe('track layout', () => {
 });
 
 describe('per-color entry offsets', () => {
-  it.each(PLAYER_COLORS.map((color, i) => [color, i * 13] as const))(
+  it.each([
+    ['red', 0],
+    ['green', 13],
+    ['yellow', 26],
+    ['blue', 39],
+  ] as const)(
     '%s starts at track index %i',
     (color, expectedStart) => {
       expect(getStartTrackIndex(color)).toBe(expectedStart);

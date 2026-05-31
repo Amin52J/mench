@@ -1,3 +1,4 @@
+import { autoPlayCurrentTurn } from '@game/autoPlay.ts';
 import {
   applyMove,
   createGame,
@@ -14,6 +15,7 @@ export type LocalGameAction =
   | { readonly type: 'roll'; readonly die: DieValue }
   | { readonly type: 'move'; readonly piece: PieceId }
   | { readonly type: 'forfeit' }
+  | { readonly type: 'auto_play' }
   | { readonly type: 'restart'; readonly setup: GameSetup }
   | { readonly type: 'reset' };
 
@@ -38,6 +40,8 @@ export function localGameReducer(
       return state === null ? state : applyMove(state, action.piece);
     case 'forfeit':
       return state === null ? state : forfeitTurn(state);
+    case 'auto_play':
+      return state === null ? state : autoPlayCurrentTurn(state, randomDie);
     case 'reset':
       return null;
     default:

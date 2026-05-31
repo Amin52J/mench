@@ -1,21 +1,53 @@
 import { describe, expect, it } from 'vitest';
-import { parseClientMessage, TURN_TIMER_SECONDS } from './protocol.ts';
+import {
+  parseClientMessage,
+  RECONNECT_GRACE_MS,
+  TURN_TIMER_SECONDS,
+} from './protocol.ts';
 
 describe('parseClientMessage', () => {
   it('accepts join with joinCode', () => {
     expect(
       parseClientMessage({ type: 'join', joinCode: 'ABCD1234' }),
-    ).toEqual({ type: 'join', joinCode: 'ABCD1234', displayName: undefined });
+    ).toEqual({ type: 'join', joinCode: 'ABCD1234', displayName: undefined, resumeToken: undefined });
   });
 
-  it('accepts join with displayName', () => {
+  it('accepts join with displayName and resumeToken', () => {
     expect(
-      parseClientMessage({ type: 'join', joinCode: 'X', displayName: 'Ada' }),
-    ).toEqual({ type: 'join', joinCode: 'X', displayName: 'Ada' });
+      parseClientMessage({
+        type: 'join',
+        joinCode: 'X',
+        displayName: 'Ada',
+        resumeToken: 'tok',
+      }),
+    ).toEqual({
+      type: 'join',
+      joinCode: 'X',
+      displayName: 'Ada',
+      resumeToken: 'tok',
+    });
   });
 
   it('rejects join missing joinCode', () => {
     expect(parseClientMessage({ type: 'join' })).toBeNull();
+  });
+
+  it('accepts update_setup', () => {
+    expect(
+      parseClientMessage({
+        type: 'update_setup',
+        playerCount: 2,
+        seats: [{ kind: 'human' }, { kind: 'cpu' }],
+      }),
+    ).toEqual({
+      type: 'update_setup',
+      playerCount: 2,
+      seats: [{ kind: 'human' }, { kind: 'cpu' }],
+    });
+  });
+
+  it('accepts start_game', () => {
+    expect(parseClientMessage({ type: 'start_game' })).toEqual({ type: 'start_game' });
   });
 
   it('accepts ping', () => {
@@ -76,7 +108,8 @@ describe('parseClientMessage', () => {
     expect(parseClientMessage('string')).toBeNull();
   });
 
-  it('exposes the 30-second timer constant (O14)', () => {
+  it('exposes timer and reconnect constants', () => {
     expect(TURN_TIMER_SECONDS).toBe(30);
+    expect(RECONNECT_GRACE_MS).toBe(60_000);
   });
 });

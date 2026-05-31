@@ -1,7 +1,13 @@
 /** Player seat colors in clockwise board order (Red → Green → Yellow → Blue). */
-export type PlayerColor = 'red' | 'green' | 'yellow' | 'blue';
+export type PlayerColor = 'blue' | 'red' | 'green' | 'yellow';
 
-export const PLAYER_COLORS = ['red', 'green', 'yellow', 'blue'] as const satisfies readonly PlayerColor[];
+/** Clockwise turn order for a full four-player game (`product.mdc`). */
+export const PLAYER_COLORS = [
+  'blue',
+  'red',
+  'green',
+  'yellow',
+] as const satisfies readonly PlayerColor[];
 
 /** Whether a seat is controlled by a human or the CPU (`product.mdc` O12). */
 export type PlayerKind = 'human' | 'cpu';

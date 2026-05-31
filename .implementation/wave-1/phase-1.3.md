@@ -17,7 +17,7 @@
 **Key decisions earned here:**
 
 - Rules engine stays a single-file reducer at `src/game/rules.ts` (per `architecture.mdc:52`); no need to split until CPU work in wave 3.
-- **Finish cell is a pile, not a square:** `home`/`HOME_FINISH_INDEX` accepts all four pieces of a color simultaneously. The "no stacking / no blockades" rule (`product.mdc:25`) is enforced everywhere _except_ the finish cell. Recorded here rather than mutating `product.mdc` because it's an implementation invariant, not a player-visible rule.
+- **Stacking:** multiple pieces may share a track or home-column cell (`product.mdc`). The finish triangle was always a pile; now mid-board cells stack too, with UI offsets via `stackIndex` in `BoardView`.
 - **Safe squares protect from capture, not from co-residence.** Landing on a safe square occupied by an opponent is legal — the attacker just doesn't send them home. Same rule applies to start squares (which are members of `SAFE_TRACK_INDICES`).
 - **No-legal-move on a 6 keeps the turn** (player rolls again, sixes counter persists), matching the spirit of "rolling 6 grants another roll" in `product.mdc:19`. A non-six with no legal move passes the turn.
 - `forfeitTurn` is allowed in either phase so the 30s timer path is single-call regardless of whether the human rolled before timing out.

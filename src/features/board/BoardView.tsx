@@ -72,7 +72,7 @@ export function BoardView({
             const commonProps = {
               className: styles.piece,
               'data-color': piece.color,
-              'data-stack': piece.stackIndex,
+              'data-stack': piece.stackIndex % 4,
               'data-legal': isLegal ? 'true' : 'false',
               'data-shake': isShaking ? 'true' : 'false',
               style: pieceStyle(piece.coord),

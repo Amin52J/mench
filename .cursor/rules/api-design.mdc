@@ -47,7 +47,8 @@ type ServerMessage =
 
 - **30 seconds** from turn start for each **human** seat (`decisions.mdc` O14).
 - DO stores `turnDeadline` (epoch ms); include `turnSecondsRemaining` (or deadline) in `PublicGameState` broadcasts.
-- On expiry without completed turn: apply **skip turn** via rules engine; broadcast new state.
+- On expiry without completed turn: **auto-play** the rest of the active human turn (CPU heuristics, seat stays `human`); broadcast new state.
+- **`room_notice`** broadcasts (`player_left`, `player_rejoined`) when a human disconnects mid-game or resumes with `resumeToken`.
 - Clients may show local countdown but **server deadline wins** on conflict.
 
 ## Sequence numbers & reconnect (phase 4.2)
@@ -55,7 +56,8 @@ type ServerMessage =
 - The DO holds an in-memory monotonic `seq` (starts at 0 after `init`). Every successful state transition increments it by 1; illegal intents reply with `error` and do **not** advance `seq`.
 - Every broadcast (`welcome`, `state`) carries the current `seq`. Clients accept a `state` only when `seq` is strictly greater than the last one they applied; smaller or equal `seq` values are dropped (out-of-order or replay).
 - A fresh `welcome` snapshot (returned after `join`) always replaces local state — it is the resync mechanism on reconnect.
-- **Reconnect policy v1:** when a client's socket closes, the DO frees its seat immediately. Reconnecting means opening a new WebSocket and sending `join` again; the new join picks the first free human seat — there is no seat-by-token resume yet. Phase 4.3 will add a short grace window so a refreshed tab keeps its seat.
+- **Reconnect policy (phase 4.3):** when a socket closes, the seat stays reserved for **60s** (`RECONNECT_GRACE_MS` in `protocol.ts`). Reconnect with the same `resumeToken` from `welcome` (stored client-side in `sessionStorage`) to reclaim the seat. After grace, the seat opens to new joiners. Host promotion after host grace is documented in `product.mdc`.
+- **Lobby (phase 4.3):** before `start_game`, the room is in lobby mode. Host sends `update_setup` (player count + seat kinds); server broadcasts `lobby` snapshots. `start_game` creates the engine state from setup; unclaimed human seats become CPU at start.
 
 ## Security (v1)
 

@@ -7,22 +7,23 @@ alwaysApply: false
 
 ## Game rules (v1)
 
-**Standard international Ludo only** — no Persian Mench variants (no blockades, no stacked pieces). See `decisions.mdc` O9, O12.
+**Standard international Ludo** with **stacking** on shared track and home-column cells (see `decisions.mdc` O9). No blockade pairs (two pieces forming a barrier).
 
 | Topic | Rule |
 | ----- | ---- |
 | Players | **2–4** active seats (unused colors disabled) |
 | Pieces | 4 per player |
 | Dice | One six-sided die per roll |
-| Enter board | Roll **6** to move a piece from yard onto starting square |
+| Enter board | Roll **6** to move a piece from yard onto starting square (may stack with own or opponent pieces already there) |
 | Movement | Move one piece forward by die value; choose among legal moves |
+| Stacking | Multiple pieces (same or different players) may occupy the same track or home-column cell; yard uses separate slots per piece |
 | Extra turn | Rolling **6** grants another roll (after moving if a legal move exists) |
 | Three sixes | Third **6** in a row: turn ends, no move on that third roll |
-| Captures | Landing on opponent (not on safe square) sends them home |
+| Captures | Landing on opponent(s) on a non-safe track square sends **all** opponent pieces on that square home |
 | Safe squares | Star/marked squares — no capture |
 | Home column | Color-specific path; must enter with exact count |
 | Finish | Exact die count to place on home triangle; all four home = win |
-| Blockades | **Off** — at most one piece per square |
+| Blockades | **Off** — no two-piece barriers that block passage |
 
 ## New game setup
 
@@ -41,7 +42,7 @@ All composition is chosen in **New game** preferences before play starts:
 ## Turn timer
 
 - **30 seconds** per human turn (roll and/or move combined in one turn window, reset when turn passes).
-- Visible countdown; at **0** the turn is forfeited and passes to the next player (no roll, or no move if already rolled — implement as skip turn per rules engine).
+- Visible countdown; at **0** the server (or local session) **auto-plays** the rest of that turn using CPU move choice — the seat **stays human** for later turns.
 - Applies to **local and online** human seats. CPUs are not timed.
 - Audio/haptic optional later; v1 = visible bar or numeric countdown only.
 
@@ -53,7 +54,7 @@ All composition is chosen in **New game** preferences before play starts:
 
 ## Visual design (branding)
 
-- **Classic Mench / Ludo look:** four familiar player colors (red, green, yellow, blue), cross-shaped board, yards in corners, home triangles — recognizable at a glance.
+- **Classic Mench / Ludo look:** four familiar player colors (blue, red, green, yellow — clockwise turn order), cross-shaped board; yards at **red top-left**, **green top-right**, **yellow bottom-right**, **blue bottom-left**; home triangles toward center.
 - **Minimal chrome:** thin borders, flat fills, little ornament; let the board and pieces carry the identity.
 - No custom logo or marketing kit yet — use simple wordmark “Mench” and placeholder PWA icons until art is added.
 - Tokens live in `src/shared/styles/tokens.css` (phase 2.1).
@@ -71,7 +72,7 @@ All composition is chosen in **New game** preferences before play starts:
 - Joiners enter code or open link; optional display name.
 - Server is source of truth; reconnect within session TTL if disconnected briefly.
 - **30s turn timer** enforced server-side for human seats.
-- If host leaves, promote another connected human or end game (phase 4.3).
+- **Host leave:** if the host disconnects and does not reconnect within the **60s** session grace window, the room **promotes** the connected human with the lowest seat index to host. If no humans remain connected, the room **ends** for everyone.
 
 ## PWA
 

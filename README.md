@@ -35,7 +35,7 @@ Runs [`wrangler dev`](https://developers.cloudflare.com/workers/wrangler/command
 npx wrangler login
 ```
 
-With **both** running, Vite proxies `/api/*` to the Worker so the browser can call `fetch('/api/rooms')` without CORS friction.
+With **both** running, Vite proxies `/api/*` (including **WebSockets**) to the Worker so the browser can call `fetch('/api/rooms')` and open `ws://localhost:5173/api/rooms/…/ws` without CORS friction. If you change `vite.config.ts` proxy settings, restart `pnpm dev`.
 
 ## Cloudflare layout (Pages vs Worker vs Durable Object)
 

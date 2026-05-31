@@ -68,9 +68,9 @@ export function scoreMove(state: GameState, move: LegalMove): number {
 
   let score = 0;
 
-  // Capture (huge).
-  if (move.capture !== null) {
-    score += WEIGHTS.capture;
+  // Capture (huge; scales when multiple opponents share the landing square).
+  if (move.captures.length > 0) {
+    score += WEIGHTS.capture * move.captures.length;
     score += WEIGHTS.aggressionTieBreak;
   }
 

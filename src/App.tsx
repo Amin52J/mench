@@ -1,3 +1,4 @@
+import { useCallback, useMemo, useState } from 'react';
 import {
   BoardView,
   Dice,
@@ -6,10 +7,15 @@ import {
   useAnimationPlayground,
   useDevBoardFixture,
 } from '@/features/board';
+import { HomeView, OnlineJoinGate, OnlineRoomView } from '@/features/lobby';
+import { buildOnlineCredentials, parseJoinLink } from '@/features/online';
+import type { OnlineRoomCredentials } from '@/features/online';
 import { GameSetupView, LocalGameView, useLocalGame } from '@/features/session';
 import { pieceKey } from '@game/types';
 import { Button, Panel } from '@/shared/ui';
 import styles from './App.module.css';
+
+type AppScreen = 'home' | 'local' | 'online';
 
 function isPlaygroundMode(): boolean {
   return import.meta.env.DEV && new URLSearchParams(globalThis.location.search).get('play') === '1';
@@ -25,6 +31,49 @@ export default function App() {
   const fixture = useDevBoardFixture();
   const play = isPlaygroundMode();
   const fixtureOnly = isFixtureMode() && !play;
+
+  const linkJoin = useMemo(() => parseJoinLink(), []);
+  const [screen, setScreen] = useState<AppScreen>(() =>
+    linkJoin ? 'online' : 'home',
+  );
+  /** Invite links show {@link OnlineJoinGate} first; host/manual join set this immediately. */
+  const [onlineCredentials, setOnlineCredentials] = useState<OnlineRoomCredentials | null>(
+    null,
+  );
+
+  const handleHostRoom = useCallback(
+    (room: { roomId: string; joinCode: string; wsUrl: string }) => {
+      const url = new URL(globalThis.location.href);
+      url.searchParams.set('room', room.roomId);
+      url.searchParams.set('join', room.joinCode);
+      globalThis.history.replaceState({}, '', url);
+      setOnlineCredentials(buildOnlineCredentials(room.roomId, room.joinCode));
+      setScreen('online');
+    },
+    [],
+  );
+
+  const handleJoinRoom = useCallback(
+    (room: {
+      roomId: string;
+      joinCode: string;
+      wsUrl: string;
+      displayName?: string;
+    }) => {
+      setOnlineCredentials(room);
+      setScreen('online');
+    },
+    [],
+  );
+
+  const leaveOnline = useCallback(() => {
+    setOnlineCredentials(null);
+    setScreen('home');
+    const url = new URL(globalThis.location.href);
+    url.searchParams.delete('room');
+    url.searchParams.delete('join');
+    globalThis.history.replaceState({}, '', url);
+  }, []);
 
   if (play) {
     return (
@@ -47,18 +96,55 @@ export default function App() {
   return (
     <main className={styles.shell}>
       <AppHeader />
-      {session.screen === 'setup' ? (
-        <GameSetupView
-          setup={session.setup}
-          onPlayerCount={session.setPlayerCount}
-          onSeatKind={session.setSeatKind}
-          onApplyPreset={session.applySetup}
-          onStart={session.startGame}
+      {screen === 'home' ? (
+        <HomeView
+          onLocalGame={() => setScreen('local')}
+          onHostRoom={handleHostRoom}
+          onJoinRoom={handleJoinRoom}
+          initialJoinCode={linkJoin?.joinCode}
+          initialRoomId={linkJoin?.roomId}
         />
-      ) : (
-        <LocalGameView session={session} />
-      )}
-      {import.meta.env.DEV ? <DevTools fixture={fixture} play={false} /> : null}
+      ) : null}
+      {screen === 'local' ? (
+        session.screen === 'setup' ? (
+          <>
+            <GameSetupView
+              setup={session.setup}
+              onPlayerCount={session.setPlayerCount}
+              onSeatKind={session.setSeatKind}
+              onApplyPreset={session.applySetup}
+              onStart={session.startGame}
+            />
+            <Button variant="ghost" onClick={() => setScreen('home')}>
+              Back
+            </Button>
+          </>
+        ) : (
+          <>
+            <LocalGameView session={session} />
+            <Button variant="ghost" onClick={() => session.backToSetup()}>
+              New game
+            </Button>
+            <Button variant="ghost" onClick={() => setScreen('home')}>
+              Home
+            </Button>
+          </>
+        )
+      ) : null}
+      {screen === 'online' && linkJoin && onlineCredentials === null ? (
+        <OnlineJoinGate
+          roomId={linkJoin.roomId}
+          joinCode={linkJoin.joinCode}
+          onJoin={setOnlineCredentials}
+          onCancel={leaveOnline}
+        />
+      ) : null}
+      {screen === 'online' && onlineCredentials !== null ? (
+        <OnlineRoomView credentials={onlineCredentials} onLeave={leaveOnline} />
+      ) : null}
+      {import.meta.env.DEV && screen !== 'online' ? (
+        <DevTools fixture={fixture} play={false} />
+      ) : null}
     </main>
   );
 }

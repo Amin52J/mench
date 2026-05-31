@@ -54,6 +54,8 @@ export function useAnimationPlayground(): AnimationPlaygroundState {
 
 export function formatMoveLabel(move: LegalMove): string {
   const capture =
-    move.capture !== null ? ` (captures ${pieceKey(move.capture)})` : '';
+    move.captures.length > 0
+      ? ` (captures ${move.captures.map((c) => pieceKey(c)).join(', ')})`
+      : '';
   return `${move.piece.color} #${move.piece.index + 1} → ${move.to.zone}${capture}`;
 }

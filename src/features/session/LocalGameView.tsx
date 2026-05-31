@@ -1,4 +1,5 @@
-import { BoardView, Dice } from '@/features/board';
+import { BoardView, Dice, useDiceFace } from '@/features/board';
+import { randomDie } from './localGameReducer.ts';
 import { Button, Panel } from '@/shared/ui';
 import { playersForCount } from './types.ts';
 import { TurnTimer } from './TurnTimer.tsx';
@@ -12,12 +13,24 @@ export interface LocalGameViewProps {
 
 export function LocalGameView({ session }: LocalGameViewProps) {
   const { game, setup, seatKinds, activeColor, activeSeatKind, feedback } = session;
+  const { face: diceFace, announceRoll } = useDiceFace({
+    dice: game?.dice ?? null,
+    lastRoll: game?.lastRoll ?? null,
+    canRoll: session.canRoll,
+  });
+
   if (game === null || activeColor === null) {
     return null;
   }
 
   const players = playersForCount(setup.playerCount);
   const winner = game.winner;
+
+  const handleRoll = (): void => {
+    const die = randomDie();
+    announceRoll(die);
+    session.roll(die);
+  };
   const phaseHint =
     game.phase === 'roll'
       ? activeSeatKind === 'cpu'
@@ -46,11 +59,7 @@ export function LocalGameView({ session }: LocalGameViewProps) {
         </div>
 
         <div className={styles.playRow}>
-          <Dice
-            value={game.dice}
-            canRoll={session.canRoll}
-            onRoll={session.roll}
-          />
+          <Dice value={diceFace} canRoll={session.canRoll} onRoll={handleRoll} />
         </div>
 
         <BoardView

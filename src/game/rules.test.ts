@@ -88,11 +88,44 @@ describe('getLegalMoves — entering the board', () => {
     expect(sixes).toHaveLength(4);
     for (const m of sixes) {
       expect(m.to).toEqual({ zone: 'track', index: 0 });
-      expect(m.capture).toBeNull();
+      expect(m.captures).toEqual([]);
     }
   });
 
-  it('does not allow stacking on a square already occupied by an own piece', () => {
+  it('allows yard entry on 6 when start is clear but other track squares are occupied', () => {
+    let game = createGame({ players: ['red', 'green'] });
+    game = placePieces(game, {
+      red: [
+        { zone: 'track', index: 10 },
+        { zone: 'track', index: 20 },
+        { zone: 'track', index: 30 },
+        { zone: 'yard' },
+      ],
+    });
+    const moves = getLegalMoves(withDie(game, 6));
+    const yardEnter = moves.filter((m) => m.piece.index === 3);
+    expect(yardEnter).toHaveLength(1);
+    expect(yardEnter[0]?.to).toEqual({ zone: 'track', index: 0 });
+    expect(moves.some((m) => m.piece.index === 0)).toBe(true);
+  });
+
+  it('allows yard entry on 6 onto start even when own piece already occupies it', () => {
+    let game = createGame({ players: ['red', 'green'] });
+    game = placePieces(game, {
+      red: [
+        { zone: 'track', index: 0 },
+        { zone: 'yard' },
+        { zone: 'yard' },
+        { zone: 'yard' },
+      ],
+    });
+    const rolled = withDie(game, 6);
+    const next = applyMove(rolled, pid('red', 1));
+    expect(next.board.positions[pieceKey(pid('red', 0))]).toEqual({ zone: 'track', index: 0 });
+    expect(next.board.positions[pieceKey(pid('red', 1))]).toEqual({ zone: 'track', index: 0 });
+  });
+
+  it('allows yard entry on 6 when start is occupied by own pieces', () => {
     let game = createGame({ players: ['red', 'green'] });
     game = placePieces(game, {
       red: [
@@ -103,10 +136,31 @@ describe('getLegalMoves — entering the board', () => {
       ],
     });
     const moves = getLegalMoves(withDie(game, 6));
-    // The piece on 0 may still move forward (track motion), but yard pieces
-    // cannot enter onto the blocked start square.
     const yardEnters = moves.filter((m) => m.piece.index !== 0);
-    expect(yardEnters).toEqual([]);
+    expect(yardEnters).toHaveLength(3);
+    for (const m of yardEnters) {
+      expect(m.captures).toEqual([]);
+      expect(m.to).toEqual({ zone: 'track', index: 0 });
+    }
+    expect(moves.some((m) => m.piece.index === 0)).toBe(true);
+  });
+});
+
+describe('getLegalMoves — stacking', () => {
+  it('allows two own pieces on the same track square', () => {
+    let game = createGame({ players: ['red', 'green'] });
+    game = placePieces(game, {
+      red: [
+        { zone: 'track', index: 5 },
+        { zone: 'track', index: 2 },
+        { zone: 'yard' },
+        { zone: 'yard' },
+      ],
+    });
+    const rolled = withDie(game, 3);
+    const next = applyMove(rolled, pid('red', 1));
+    expect(next.board.positions[pieceKey(pid('red', 0))]).toEqual({ zone: 'track', index: 5 });
+    expect(next.board.positions[pieceKey(pid('red', 1))]).toEqual({ zone: 'track', index: 5 });
   });
 });
 
@@ -135,11 +189,31 @@ describe('captures', () => {
     const moves = getLegalMoves(rolled);
     const attack = moves.find((m) => m.piece.index === 0);
     expect(attack?.to).toEqual({ zone: 'track', index: 7 });
-    expect(attack?.capture).toEqual(pid('green', 0));
+    expect(attack?.captures).toEqual([pid('green', 0)]);
 
     const next = applyMove(rolled, pid('red', 0));
     expect(next.board.positions[pieceKey(pid('green', 0))]).toEqual({ zone: 'yard' });
     expect(next.board.positions[pieceKey(pid('red', 0))]).toEqual({ zone: 'track', index: 7 });
+  });
+
+  it('captures every opponent on the landing square', () => {
+    let game = createGame({ players: ['red', 'green'] });
+    game = placePieces(game, {
+      red: [{ zone: 'track', index: 4 }, { zone: 'yard' }, { zone: 'yard' }, { zone: 'yard' }],
+      green: [
+        { zone: 'track', index: 7 },
+        { zone: 'track', index: 7 },
+        { zone: 'yard' },
+        { zone: 'yard' },
+      ],
+    });
+    const rolled = withDie(game, 3);
+    const attack = getLegalMoves(rolled).find((m) => m.piece.index === 0);
+    expect(attack?.captures).toEqual([pid('green', 0), pid('green', 1)]);
+
+    const next = applyMove(rolled, pid('red', 0));
+    expect(next.board.positions[pieceKey(pid('green', 0))]).toEqual({ zone: 'yard' });
+    expect(next.board.positions[pieceKey(pid('green', 1))]).toEqual({ zone: 'yard' });
   });
 
   it('does not capture on a safe square (start/star)', () => {
@@ -165,7 +239,7 @@ describe('captures', () => {
     // Landing on a safe square is allowed but **never captures** the opponent
     // sitting there — that's the whole point of stars/start squares.
     expect(move?.to).toEqual({ zone: 'track', index: 8 });
-    expect(move?.capture).toBeNull();
+    expect(move?.captures).toEqual([]);
 
     const next = applyMove(rolled, pid('red', 0));
     // Green's piece is untouched on the safe square.
@@ -290,6 +364,7 @@ describe('extra turn on six & three-sixes forfeit', () => {
     const s = rollDice(game, 3);
     expect(activeColor(s)).toBe('green');
     expect(s.phase).toBe('roll');
+    expect(s.lastRoll).toBe(3);
   });
 
   it('keeps the turn on a 6 that has no legal move (entry blocked by own piece)', () => {

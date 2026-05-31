@@ -13,6 +13,8 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:8787',
         changeOrigin: true,
+        /** Required for online play through the Vite dev server (`ws://localhost:5173/api/...`). */
+        ws: true,
       },
     },
   },

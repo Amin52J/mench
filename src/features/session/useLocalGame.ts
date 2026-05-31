@@ -3,6 +3,7 @@ import {
   activeSeatKind,
   getLegalMoves,
   IllegalIntentError,
+  type DieValue,
   type GameState,
   type LegalMove,
 } from '@game/rules';
@@ -47,7 +48,7 @@ export interface UseLocalGameResult {
   readonly timerSeconds: number;
   readonly timerProgress: number;
   readonly feedback: LocalGameFeedback;
-  readonly roll: () => void;
+  readonly roll: (die?: DieValue) => void;
   readonly move: (piece: PieceId) => void;
   readonly tryMove: (piece: PieceId) => void;
 }
@@ -154,26 +155,30 @@ export function useLocalGame(): UseLocalGameResult {
 
   const canRoll = isHumanTurn && game.phase === 'roll';
 
-  const forfeit = useCallback(() => {
-    dispatch({ type: 'forfeit' });
+  const autoPlayOnTimeout = useCallback(() => {
+    dispatch({ type: 'auto_play' });
   }, []);
 
   const { secondsLeft: timerSeconds, progress: timerProgress } = useTurnTimer({
     enabled: isHumanTurn,
     turnKey: activePlayerIndex,
-    onExpire: forfeit,
+    onExpire: autoPlayOnTimeout,
   });
 
-  const roll = useCallback(() => {
-    if (!canRoll || game === null) return;
-    try {
-      dispatch({ type: 'roll', die: randomDie() });
-    } catch (error) {
-      if (error instanceof IllegalIntentError) {
-        showFeedback({ toast: 'Cannot roll now' });
+  const roll = useCallback(
+    (die?: DieValue) => {
+      if (!canRoll || game === null) return;
+      const value = die ?? randomDie();
+      try {
+        dispatch({ type: 'roll', die: value });
+      } catch (error) {
+        if (error instanceof IllegalIntentError) {
+          showFeedback({ toast: 'Cannot roll now' });
+        }
       }
-    }
-  }, [canRoll, game, showFeedback]);
+    },
+    [canRoll, game, showFeedback],
+  );
 
   const move = useCallback(
     (piece: PieceId) => {

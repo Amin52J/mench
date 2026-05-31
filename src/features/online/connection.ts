@@ -60,6 +60,12 @@ function isServerMessage(value: unknown): value is ServerMessage {
   if (typeof value !== 'object' || value === null) return false;
   const t = (value as { type?: unknown }).type;
   return (
-    t === 'welcome' || t === 'state' || t === 'error' || t === 'pong'
+    t === 'welcome' ||
+    t === 'lobby' ||
+    t === 'state' ||
+    t === 'room_notice' ||
+    t === 'room_closed' ||
+    t === 'error' ||
+    t === 'pong'
   );
 }

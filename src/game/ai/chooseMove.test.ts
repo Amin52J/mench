@@ -13,13 +13,14 @@ import {
 } from './index.ts';
 import { isCellThreatened, scoreMove } from './score.ts';
 
-const PLAYERS: readonly PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
+/** Four-color test boards — red at index 0 so `activePlayerIndex: 0` means red's turn. */
+const TEST_FOUR_PLAYERS: readonly PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
 
 function makeGame(
   overrides: Partial<Omit<GameState, 'players' | 'seatKinds' | 'board'>> = {},
 ): GameState {
   const base = createGame({
-    players: PLAYERS,
+    players: TEST_FOUR_PLAYERS,
     seatKinds: ['cpu', 'cpu', 'cpu', 'cpu'],
   });
   return { ...base, ...overrides };
@@ -53,8 +54,8 @@ describe('chooseMove — heuristics', () => {
     const choice = chooseMove(game, { random: () => 0 });
     expect(choice).not.toBeNull();
     expect(choice!.piece.index).toBe(0 satisfies PieceIndex);
-    expect(choice!.capture).not.toBeNull();
-    expect(choice!.capture!.color).toBe('green');
+    expect(choice!.captures.length).toBeGreaterThan(0);
+    expect(choice!.captures[0]!.color).toBe('green');
   });
 
   it('returns null when there are no legal moves', () => {
@@ -159,12 +160,12 @@ describe('chooseMove — heuristics', () => {
       {
         piece: { color: 'red' as const, index: 0 as PieceIndex },
         to: { zone: 'track' as const, index: RED_START + die },
-        capture: { color: 'green' as const, index: 0 as PieceIndex },
+        captures: [{ color: 'green' as const, index: 0 as PieceIndex }],
       },
       {
         piece: { color: 'red' as const, index: 1 as PieceIndex },
         to: { zone: 'track' as const, index: 43 },
-        capture: null,
+        captures: [],
       },
     ];
 

@@ -1,0 +1,42 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lead {
+  margin: 0;
+  color: var(--color-muted, #555);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.joinRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.joinFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.joinFields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 8rem;
+  font-size: 0.875rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger, #b91c1c);
+}

@@ -1,11 +1,12 @@
 /**
  * 15×15 classic Ludo grid coordinates for rendering.
  * Track index `i` matches `src/game/board.ts` (0 = red start, clockwise).
- * Path cell order derived from a standard 52-cell loop; offset aligns index 0 with red.
+ * Path cell order derived from a standard 52-cell loop; offset aligns index 0 with red's
+ * start square (top-left yard on the rendered board).
  */
 
 import { SAFE_TRACK_INDICES, START_TRACK_INDEX } from '@game/board';
-import type { PiecePosition, PlayerColor } from '@game/types';
+import { PLAYER_COLORS, type PiecePosition, type PlayerColor } from '@game/types';
 
 export const GRID_SIZE = 15;
 
@@ -21,8 +22,8 @@ const JAVA_PATH_FLAT: readonly number[] = [
   171, 156, 141, 125, 124, 123, 122, 121, 120, 105, 90,
 ] as const;
 
-/** Rotates the reference path so engine track index 0 is red's start square. */
-const PATH_OFFSET = 39;
+/** Rotates the reference path so engine track index 0 is red's start (top-left entry). */
+const PATH_OFFSET = 0;
 
 const JAVA_HOME_FLAT: Readonly<Record<PlayerColor, readonly number[]>> = {
   red: [202, 187, 172, 157, 142, 127],
@@ -44,18 +45,34 @@ export const TRACK_GRID: readonly GridCoord[] = Array.from(
     flatToCoord(JAVA_PATH_FLAT[(trackIndex + PATH_OFFSET) % JAVA_PATH_FLAT.length]!),
 );
 
+/** Physical corner strips from the reference layout (before color assignment). */
+const CORNER_HOME = {
+  topLeft: JAVA_HOME_FLAT.green,
+  topRight: JAVA_HOME_FLAT.yellow,
+  bottomRight: JAVA_HOME_FLAT.blue,
+  bottomLeft: JAVA_HOME_FLAT.red,
+} as const;
+
+const CORNER_YARD = {
+  topLeft: JAVA_YARD_FLAT.green,
+  topRight: JAVA_YARD_FLAT.yellow,
+  bottomRight: JAVA_YARD_FLAT.blue,
+  bottomLeft: JAVA_YARD_FLAT.red,
+} as const;
+
+/** Board corners: red top-left, green top-right, yellow bottom-right, blue bottom-left. */
 export const HOME_GRID: Readonly<Record<PlayerColor, readonly GridCoord[]>> = {
-  red: JAVA_HOME_FLAT.red.map(flatToCoord),
-  green: JAVA_HOME_FLAT.green.map(flatToCoord),
-  yellow: JAVA_HOME_FLAT.yellow.map(flatToCoord),
-  blue: JAVA_HOME_FLAT.blue.map(flatToCoord),
+  red: CORNER_HOME.topLeft.map(flatToCoord),
+  green: CORNER_HOME.topRight.map(flatToCoord),
+  yellow: CORNER_HOME.bottomRight.map(flatToCoord),
+  blue: CORNER_HOME.bottomLeft.map(flatToCoord),
 };
 
 export const YARD_GRID: Readonly<Record<PlayerColor, readonly GridCoord[]>> = {
-  red: JAVA_YARD_FLAT.red.map(flatToCoord),
-  green: JAVA_YARD_FLAT.green.map(flatToCoord),
-  yellow: JAVA_YARD_FLAT.yellow.map(flatToCoord),
-  blue: JAVA_YARD_FLAT.blue.map(flatToCoord),
+  red: CORNER_YARD.topLeft.map(flatToCoord),
+  green: CORNER_YARD.topRight.map(flatToCoord),
+  yellow: CORNER_YARD.bottomRight.map(flatToCoord),
+  blue: CORNER_YARD.bottomLeft.map(flatToCoord),
 };
 
 export type CellKind =
@@ -90,7 +107,7 @@ function buildCellLookup(): Map<string, BoardCellModel> {
     map.set(coordKey(coord), { kind, trackIndex });
   }
 
-  for (const color of ['red', 'green', 'yellow', 'blue'] as const) {
+  for (const color of PLAYER_COLORS) {
     for (let homeIndex = 0; homeIndex < HOME_GRID[color].length; homeIndex++) {
       map.set(coordKey(HOME_GRID[color][homeIndex]!), { kind: 'home', color, homeIndex });
     }
@@ -109,10 +126,10 @@ function buildCellLookup(): Map<string, BoardCellModel> {
 /** 6×6 corner blocks (yards) plus home strips — used for tinted backgrounds. */
 function yardCellsFor(color: PlayerColor): GridCoord[] {
   const ranges: Record<PlayerColor, { row: [number, number]; col: [number, number] }> = {
-    green: { row: [0, 5], col: [0, 5] },
-    yellow: { row: [0, 5], col: [9, 14] },
-    blue: { row: [9, 14], col: [9, 14] },
-    red: { row: [9, 14], col: [0, 5] },
+    red: { row: [0, 5], col: [0, 5] },
+    green: { row: [0, 5], col: [9, 14] },
+    yellow: { row: [9, 14], col: [9, 14] },
+    blue: { row: [9, 14], col: [0, 5] },
   };
   const { row, col } = ranges[color];
   const cells: GridCoord[] = [];
@@ -133,10 +150,10 @@ const CENTER_CELLS: readonly GridCoord[] = [
 ];
 
 function centerColorFor({ row, col }: GridCoord): PlayerColor | undefined {
-  if (row === 7 && col === 6) return 'green';
-  if (row === 7 && col === 8) return 'blue';
-  if (row === 6 && col === 7) return 'yellow';
-  if (row === 8 && col === 7) return 'red';
+  if (row === 7 && col === 6) return 'red';
+  if (row === 6 && col === 7) return 'green';
+  if (row === 7 && col === 8) return 'yellow';
+  if (row === 8 && col === 7) return 'blue';
   return undefined;
 }
 

@@ -10,6 +10,12 @@ export interface GameSetupProps {
   readonly onSeatKind: (seatIndex: number, kind: SeatConfig['kind']) => void;
   readonly onApplyPreset: (setup: GameSetup) => void;
   readonly onStart: () => void;
+  readonly readOnly?: boolean;
+  readonly heading?: string;
+  readonly lead?: string;
+  readonly startLabel?: string;
+  readonly showStart?: boolean;
+  readonly canStartOverride?: boolean;
 }
 
 const COUNT_OPTIONS: readonly GameSetup['playerCount'][] = [2, 3, 4];
@@ -20,28 +26,37 @@ export function GameSetupView({
   onSeatKind,
   onApplyPreset,
   onStart,
+  readOnly = false,
+  heading = 'New game',
+  lead = 'Local hotseat — pick seats and who plays each one.',
+  startLabel = 'Start game',
+  showStart = true,
+  canStartOverride,
 }: GameSetupProps) {
   const colors = playersForCount(setup.playerCount);
   const hasHuman = setup.seats.some((seat) => seat.kind === 'human');
-  const canStart = hasHuman || devAllowAllCpuStart();
+  const canStart =
+    canStartOverride ?? (hasHuman || devAllowAllCpuStart());
 
   return (
     <Panel className={styles.panel}>
-      <h2 className={styles.heading}>New game</h2>
-      <p className={styles.lead}>Local hotseat — pick seats and who plays each one.</p>
+      <h2 className={styles.heading}>{heading}</h2>
+      <p className={styles.lead}>{lead}</p>
 
-      <fieldset className={styles.fieldset}>
-        <legend className={styles.legend}>Quick start</legend>
-        <div className={styles.presetRow}>
-          {QUICK_SETUP_PRESETS.map((preset) => (
-            <Button key={preset.id} variant="ghost" onClick={() => onApplyPreset(preset.setup)}>
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-      </fieldset>
+      {!readOnly ? (
+        <fieldset className={styles.fieldset}>
+          <legend className={styles.legend}>Quick start</legend>
+          <div className={styles.presetRow}>
+            {QUICK_SETUP_PRESETS.map((preset) => (
+              <Button key={preset.id} variant="ghost" onClick={() => onApplyPreset(preset.setup)}>
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
 
-      <fieldset className={styles.fieldset}>
+      <fieldset className={styles.fieldset} disabled={readOnly}>
         <legend className={styles.legend}>Players</legend>
         <div className={styles.countRow}>
           {COUNT_OPTIONS.map((count) => (
@@ -49,6 +64,7 @@ export function GameSetupView({
               key={count}
               variant={count === setup.playerCount ? 'primary' : 'ghost'}
               onClick={() => onPlayerCount(count)}
+              disabled={readOnly}
             >
               {count}
             </Button>
@@ -68,12 +84,14 @@ export function GameSetupView({
                 <Button
                   variant={seat.kind === 'human' ? 'primary' : 'ghost'}
                   onClick={() => onSeatKind(index, 'human')}
+                  disabled={readOnly}
                 >
                   Human
                 </Button>
                 <Button
                   variant={seat.kind === 'cpu' ? 'primary' : 'ghost'}
                   onClick={() => onSeatKind(index, 'cpu')}
+                  disabled={readOnly}
                 >
                   CPU
                 </Button>
@@ -83,9 +101,11 @@ export function GameSetupView({
         })}
       </ul>
 
-      <Button className={styles.start} onClick={onStart} disabled={!canStart}>
-        Start game
-      </Button>
+      {showStart ? (
+        <Button className={styles.start} onClick={onStart} disabled={!canStart || readOnly}>
+          {startLabel}
+        </Button>
+      ) : null}
       {!canStart ? (
         <p className={styles.hint} role="status">
           At least one human seat is required.

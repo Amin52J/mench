@@ -17,7 +17,7 @@ Each entry is a closed decision with its resolution and where the result lives. 
 | O6 | Identity (v1) | **No accounts.** Join with room code/link and optional **display name** in room memory only. | `core.mdc`, `product.mdc` |
 | O7 | CPU intelligence | **Heuristic scoring + shallow lookahead.** Single “smart” difficulty in v1. | `product.mdc`, wave-3 |
 | O8 | Dependencies | Prefer browser APIs and small, focused libraries. New runtime dependency requires discussion. | `core.mdc` |
-| O9 | Rules variant | **Standard international Ludo only.** Persian Mench variants (blockades, stacking, etc.) are **out of scope**, not deferred. | `product.mdc` |
+| O9 | Rules variant | **Standard international Ludo** with **stacking** on shared track/home cells (multiple pieces per square; landing captures all opponents there). **Blockade pairs** (two-piece barriers) remain out of scope. | `product.mdc` |
 | O10 | PWA | **vite-plugin-pwa** (or equivalent); offline = shell + message for online play. | `roadmap.mdc`, wave-5 |
 | O11 | Project layout | `src/game/`, `src/features/`, `src/shared/`, `worker/`. | `architecture.mdc` |
 | O12 | Player setup | **2–4 seats**; each seat **Human** or **CPU** in New game preferences. **0–4 humans** valid; at least one human to start a normal session. | `product.mdc`, wave-3 |

@@ -1,0 +1,78 @@
+---
+alwaysApply: true
+---
+
+# Execution discipline
+
+## Before writing code
+1. Search the codebase for existing patterns first — semantic search and grep.
+2. Reuse before creating. Extend before duplicating.
+3. State which files you'll touch and why, before touching them.
+4. If context is missing, **ask** — don't assume.
+
+## Reuse shared UI — do not re-style raw HTML (when applicable)
+
+Once you have a shared component library (e.g. `src/shared/ui/` or your framework's design system), **check it before styling primitives locally.**
+
+**Hard rules (when a shared kit exists):**
+
+1. **No raw `<input>`, `<textarea>`, or `<button>` with custom CSS classes outside the shared UI layer.** Use the kit's components.
+2. **If a component is missing a prop you need, extend the component** — don't fork styles into a feature file.
+3. **If no suitable component exists, stop and ask** before introducing a new styled primitive.
+4. **Rule-conflict assertion applies here too.** Before adding styled interactive elements, name the shared component you're using or explain why none fit.
+
+Shared UI lives in `src/shared/ui/` (introduced in wave 2). **Hard rules apply once that folder exists** — see `conventions.mdc`.
+
+Until wave 2.1 lands primitives, match existing feature patterns and avoid one-off styled `<button>`/`<input>` that duplicate an existing shared component.
+
+## Before non-trivial changes
+Read the relevant rule file (`product.mdc` for features, `decisions.mdc` for past choices, etc. — see `plan-map.mdc`). Rule files are the source of truth.
+
+**Rule-conflict assertion (required, not optional):** Before writing code for a non-trivial change, in your *response message* either:
+
+1. **Quote the relevant rule lines verbatim** (with `file:line`) and confirm your approach matches them; or
+2. **Explicitly call out the deviation** — what the rule says, what you're doing instead, and why. Then ask before proceeding, or update the rule in the same change.
+
+Silence is a rule violation. "Quietly correct" deviations are still rule violations — the reader has to be told.
+
+## Partner mindset
+- Don't auto-agree with my suggestions. If I'm wrong, say so.
+- Question my assumptions. Offer counterpoints when you see a better path.
+- Prioritize correctness over politeness. Pushback is preferred over false agreement.
+
+## Change scope
+- Smallest possible change that solves the problem.
+- One concern per edit. No drive-by refactors.
+- If a refactor IS warranted, propose it separately — don't bundle it into a feature change.
+
+## After completing a task
+
+Before marking a coding task done, run (from repo root):
+
+```bash
+pnpm check:types && pnpm check:lint && pnpm test && pnpm build
+```
+
+Skip `pnpm build` only when the phase file explicitly says so. Fix anything you introduced. See `conventions.mdc` if scripts are missing (add them in phase 1.1, do not invent alternate commands).
+
+Do not treat a task as finished if verification fails on your changes. If a check fails twice on the same artifact, follow the two-strikes rule below.
+
+## Anti-hallucination
+- Never invent APIs, packages, file paths, or types. Verify in the codebase or `package.json` first.
+- If unsure whether something exists, search or ask.
+- Cite `file:line` when referencing existing code.
+- For framework libraries: check the **installed** version's API; don't assume from training data.
+
+## When stuck — two-strikes rule (hard stop)
+
+If a verification step fails twice on the same artifact — test, type-check, lint, build, CI diff — **stop**. Do not apply a third fix.
+
+In your next message:
+
+1. State what was attempted on tries 1 and 2 and why each failed.
+2. Re-derive the problem from first principles (what guarantees does each side actually make? are they actually compatible?).
+3. Surface the root question and **ask** before continuing.
+
+A patching spiral almost always means a wrong assumption upstream, not a bug at the patch site. The two-strikes count resets only when you've changed the underlying assumption.
+
+Escalation: if the root cause involves architecture trade-offs or hairy debugging, say so explicitly — model switching may be manual in your IDE. State *"I'd recommend switching to Opus for this"* in plain text when appropriate.

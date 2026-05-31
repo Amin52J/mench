@@ -1,0 +1,56 @@
+---
+description: Layer boundaries and import rules for Mench client and Worker.
+globs:
+  - "src/**"
+  - "worker/**"
+alwaysApply: false
+---
+
+# Architecture
+
+## Layers
+
+```
+┌─────────────────────────────────────────┐
+│  features/ (lobby, board-ui, online)    │  React, CSS modules
+├─────────────────────────────────────────┤
+│  shared/ (ui, hooks, styles, utils)     │  React ok; no game rules
+├─────────────────────────────────────────┤
+│  game/ (rules engine, board, moves)    │  NO React, NO fetch, NO DOM
+└─────────────────────────────────────────┘
+
+worker/  ──imports──►  game/ (shared types + validate/apply)
+         Durable Object holds authoritative GameState
+```
+
+## Import rules
+
+| From | May import |
+| ---- | ---------- |
+| `src/game/**` | Other `game/**` only |
+| `src/shared/**` | `game/**` for types only if needed; never feature code |
+| `src/features/**` | `game/**`, `shared/**`, other features via public `index.ts` only if intentional |
+| `worker/**` | `src/game/**` (path alias `@game/`) — duplicate build config, no React |
+
+**Forbidden:** `game/` importing React, `features/` importing Worker internals, circular feature imports.
+
+## State
+
+- **Local / CPU:** React state or `useReducer` driven by `game` reducers in `src/features/session/`.
+- **Online:** Optimistic UI optional; server broadcast is truth. Client sends `{ type: 'intent', ... }`; never apply opponent moves locally without server ack.
+
+## Shared rules
+
+- `applyMove(state, action)` and `getLegalMoves(state)` live in `src/game/`.
+- Worker calls the same functions after validating turn and seat.
+
+## File placement
+
+| Concern | Location |
+| ------- | -------- |
+| Board graph, indices | `src/game/board.ts` |
+| Turn / dice / win | `src/game/rules.ts` |
+| CPU scoring | `src/game/ai/` |
+| Board SVG/DOM | `src/features/board/` |
+| Room join UI | `src/features/lobby/` |
+| DO room logic | `worker/room.ts` |

@@ -1,0 +1,63 @@
+---
+description: Cloudflare Worker API, rooms, and real-time protocol for online play.
+globs:
+  - "worker/**"
+  - "wrangler.toml"
+alwaysApply: false
+---
+
+# API design — online play
+
+## Components
+
+| Piece | Role |
+| ----- | ---- |
+| Static SPA | Built to `dist/`, deployed to **Cloudflare Pages** (familiar stack) |
+| HTTP Worker | Routes `/api/*`, upgrades WebSockets, creates room DOs |
+| `GameRoom` Durable Object | **One instance per room ID** — holds authoritative state, connections, and **30s turn deadlines** for human seats |
+
+**Why a Durable Object?** Pages + Workers alone are stateless. A room needs sticky state and broadcast to every tab; a DO is Cloudflare’s built-in “single coordinator per room” primitive. Free tier is sufficient for friends-and-family traffic; see phase 4.1 README for first-time binding setup.
+
+## Room lifecycle
+
+1. `POST /api/rooms` → `{ roomId, joinCode, wsUrl }` (host becomes seat 0 unless configured in setup phase).
+2. Client opens `WebSocket` to room DO with `roomId` + `joinCode` + optional `displayName`.
+3. Server assigns `playerId` / seat; broadcasts `GameState` snapshot on change.
+4. Room evicts idle connections after TTL; room object garbage-collected when empty (config in wrangler).
+
+## Message shape (draft)
+
+```ts
+// Client → server
+type ClientMessage =
+  | { type: 'join'; displayName?: string }
+  | { type: 'intent'; intent: GameIntent }  // roll, move, setup options
+  | { type: 'ping' };
+
+// Server → client
+type ServerMessage =
+  | { type: 'state'; state: PublicGameState; seq: number }
+  | { type: 'error'; code: string; message: string }
+  | { type: 'pong' };
+```
+
+`GameIntent` types mirror actions the rules engine already supports. Server rejects illegal intents with `error` and does not advance `seq`.
+
+## Turn timer (online)
+
+- **30 seconds** from turn start for each **human** seat (`decisions.mdc` O14).
+- DO stores `turnDeadline` (epoch ms); include `turnSecondsRemaining` (or deadline) in `PublicGameState` broadcasts.
+- On expiry without completed turn: apply **skip turn** via rules engine; broadcast new state.
+- Clients may show local countdown but **server deadline wins** on conflict.
+
+## Security (v1)
+
+- Join code entropy ≥ 6 alphanumeric characters.
+- Rate-limit intents per connection in the DO.
+- No PII stored; display names ephemeral in DO memory.
+
+## Deploy
+
+- `wrangler.toml` defines Worker + DO bindings + assets.
+- Environments: `dev` (local `wrangler dev`), `production`.
+- Secrets via `wrangler secret` only when needed (likely none for v1).

@@ -1,0 +1,50 @@
+---
+alwaysApply: true
+---
+
+# Where everything lives
+
+Project knowledge is split across focused rule files, each loaded only when relevant. This map is always loaded so the agent always knows where to look next.
+
+## Always loaded
+
+- `core.mdc` — mission, stack, design principles, what-not-to-do
+- `execution.mdc` — agent behavior discipline (search-first, partner mindset, anti-hallucination, two-strikes rule, verification)
+- `plan-map.mdc` — this file
+
+## Auto-loaded when touching code (glob-scoped)
+
+- `conventions.mdc` — language, lint, styling, pnpm scripts (`src/**`, `worker/**`, `*.config.*`, `package.json`)
+- `architecture.mdc` — layers, import rules (`src/**`, `worker/**`)
+
+## Auto-loaded by topic (description-scoped)
+
+- `product.mdc` — game rules, UX, multiplayer, PWA
+- `roadmap.mdc` — waves, acceptance tests, deferred items
+- `decisions.mdc` — resolved decisions ledger
+- `api-design.mdc` — Workers, rooms, WebSocket protocol (when editing `worker/`)
+
+## Operational (read on demand only)
+
+- `.implementation/wave-N/phase-X.Y.md` — single-phase log. Load **only** when a prompt references a phase (e.g. `/implement phase-1.1`).
+
+## Documentation files
+
+- `README.md` — human setup, deploy, env vars. Not loaded by Cursor.
+- `AGENTS.md` — pointer for non-Cursor agents. Not loaded by Cursor.
+
+## Repo layout (target)
+
+```
+src/
+  game/           # pure rules engine (no React)
+  features/       # lobby, board, setup, online client
+  shared/         # ui primitives, styles, hooks, utils
+worker/           # Cloudflare Worker + Durable Object(s)
+public/           # PWA icons, static assets
+.implementation/  # phase plans
+```
+
+## Not yet needed
+
+- `data-model.mdc` — add if persistent DB beyond Durable Object memory

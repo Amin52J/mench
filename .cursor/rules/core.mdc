@@ -1,0 +1,50 @@
+---
+alwaysApply: true
+---
+
+# Mench — Core rules
+
+## What this is
+
+**Mench** (*منچ*) is a web-first **standard Ludo** game for up to **4** seats. **New game** setup picks player count (2–4) and whether each seat is **Human** or **CPU**. Humans play in the browser or as a PWA; **live online** rooms on Cloudflare (Pages + Workers) sync the same rules and timers.
+
+## Platform & stack
+
+| Layer | Choice |
+| ----- | ------ |
+| UI | React (Vite), TypeScript |
+| Styling | CSS Modules — minimal layout, no heavy UI kit |
+| Package manager | pnpm |
+| Hosting | Cloudflare **Pages** (SPA) + **Workers** + **Durable Objects** (rooms), via Wrangler |
+| Distribution | PWA (installable, mobile-friendly viewport) |
+
+## Design principles
+
+1. **Rules-first.** Game logic lives in a pure, testable module with no React or network imports.
+2. **Clear feedback.** Dice, legal moves, captures, extra turns, and wins must be obvious without a manual.
+3. **Small iterations.** Ship playable slices per wave (see `roadmap.mdc` and `.implementation/`).
+4. **Simple surface, lively motion.** UI stays minimal; dice and piece movement use purposeful animation (not decorative clutter).
+5. **No guilt gamification** — no streak shaming or pressure mechanics by default.
+
+## Scope (v1)
+
+- Standard international Ludo only (see `product.mdc`)
+- Local and online play; 2–4 seats, any Human/CPU mix from setup
+- **30s turn timer** for human players
+- Classic four-color board, minimal UI (see `product.mdc` branding)
+- Smart CPU opponents (heuristic + search — not ML)
+
+## What not to do without asking
+
+- User accounts, OAuth, or persistent profiles (anonymous room play only in v1)
+- Analytics or third-party telemetry
+- New top-level dependencies (see `decisions.mdc` O8)
+- Monetization, ads, or social features
+- Change `architecture.mdc` import boundaries without updating that file in the same change
+
+## Where to look next
+
+- `product.mdc` — rules, UX, multiplayer behavior
+- `roadmap.mdc` — waves and acceptance tests
+- `decisions.mdc` — why the stack and boundaries were chosen
+- `.implementation/wave-N/` — phase checklists for `/implement`

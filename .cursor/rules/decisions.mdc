@@ -1,0 +1,38 @@
+---
+description: Resolved decisions ledger. Load when discussing past architectural or product decisions, asking "why was X decided this way?", or evaluating whether to revisit a prior choice.
+alwaysApply: false
+---
+
+# Resolved decisions ledger
+
+Each entry is a closed decision with its resolution and where the result lives. Append-only — overturning a decision means a new entry that supersedes the old (do not delete history).
+
+| # | Item | Resolution | Reflected in |
+| --- | ---- | ---------- | ------------ |
+| O1 | Client framework | **React 18+** with **Vite**, **TypeScript**, built and served as a static SPA. | `core.mdc`, `conventions.mdc`, `architecture.mdc` |
+| O2 | Styling | **CSS Modules** per component; shared tokens in `src/shared/styles/`. No CSS-in-JS, no component library in v1. | `conventions.mdc`, `core.mdc` |
+| O3 | Package manager | **pnpm** with a single app package at repo root (add workspaces only if a second package is needed). | `conventions.mdc` |
+| O4 | Hosting & deploy | **Cloudflare free tier:** **Pages** for the SPA; **Workers** for HTTP + WebSocket entry; **Wrangler** for deploy. | `core.mdc`, `api-design.mdc`, wave-5 |
+| O5 | Multiplayer authority | **Server-authoritative** state in one **Durable Object (`GameRoom`) per room**. Clients send intents; DO validates via shared rules engine and broadcasts. First DO use on this project — phase 4.1 README explains bindings and local `wrangler dev`. | `architecture.mdc`, `api-design.mdc`, wave-4 |
+| O6 | Identity (v1) | **No accounts.** Join with room code/link and optional **display name** in room memory only. | `core.mdc`, `product.mdc` |
+| O7 | CPU intelligence | **Heuristic scoring + shallow lookahead.** Single “smart” difficulty in v1. | `product.mdc`, wave-3 |
+| O8 | Dependencies | Prefer browser APIs and small, focused libraries. New runtime dependency requires discussion. | `core.mdc` |
+| O9 | Rules variant | **Standard international Ludo only.** Persian Mench variants (blockades, stacking, etc.) are **out of scope**, not deferred. | `product.mdc` |
+| O10 | PWA | **vite-plugin-pwa** (or equivalent); offline = shell + message for online play. | `roadmap.mdc`, wave-5 |
+| O11 | Project layout | `src/game/`, `src/features/`, `src/shared/`, `worker/`. | `architecture.mdc` |
+| O12 | Player setup | **2–4 seats**; each seat **Human** or **CPU** in New game preferences. **0–4 humans** valid; at least one human to start a normal session. | `product.mdc`, wave-3 |
+| O13 | Three sixes | Third consecutive **6** ends turn with **no move** on that roll. | `product.mdc`, wave-1.3 tests |
+| O14 | Turn timer | **30 seconds** per human turn (local + online); forfeit/skip turn on expiry. Server enforces online. | `product.mdc`, wave-2.3, wave-4.2 |
+| O15 | Visual branding | **Classic four-color Ludo/Mench board**, **minimal UI chrome**; no custom brand kit yet — placeholder icons OK until art exists. | `product.mdc`, wave-2.1 |
+| O16 | Online discovery | **Link/code only** — no public lobby in v1. | `product.mdc` |
+| O17 | CPU difficulty | **Single smart profile** in v1; no Easy/Hard toggle yet. | `product.mdc` |
+
+## Cloudflare note (operator)
+
+You already use **Workers + Pages**. **Durable Objects** are a small extra concept: one long-lived object instance per room ID that holds WebSocket connections and game state — a good fit for turn-based rooms on the free tier. Phase **4.1** scaffolds `wrangler.toml` bindings and documents first-time DO setup; no separate paid service required for development.
+
+## How to use this ledger
+
+- **Adding an entry:** new row with the next O-number.
+- **Overturning:** add a superseding row; do not delete history.
+- **Spotting drift:** ledger wins — update stale rule files.

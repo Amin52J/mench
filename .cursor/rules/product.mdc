@@ -1,0 +1,89 @@
+---
+description: Game rules, UX, multiplayer behavior, platform targets. Load when discussing product behavior, designing a feature, or making UX decisions.
+alwaysApply: false
+---
+
+# Product — Mench (Ludo)
+
+## Game rules (v1)
+
+**Standard international Ludo only** — no Persian Mench variants (no blockades, no stacked pieces). See `decisions.mdc` O9, O12.
+
+| Topic | Rule |
+| ----- | ---- |
+| Players | **2–4** active seats (unused colors disabled) |
+| Pieces | 4 per player |
+| Dice | One six-sided die per roll |
+| Enter board | Roll **6** to move a piece from yard onto starting square |
+| Movement | Move one piece forward by die value; choose among legal moves |
+| Extra turn | Rolling **6** grants another roll (after moving if a legal move exists) |
+| Three sixes | Third **6** in a row: turn ends, no move on that third roll |
+| Captures | Landing on opponent (not on safe square) sends them home |
+| Safe squares | Star/marked squares — no capture |
+| Home column | Color-specific path; must enter with exact count |
+| Finish | Exact die count to place on home triangle; all four home = win |
+| Blockades | **Off** — at most one piece per square |
+
+## New game setup
+
+All composition is chosen in **New game** preferences before play starts:
+
+| Setting | Options |
+| ------- | ------- |
+| Player count | 2, 3, or 4 |
+| Per seat | **Human** or **CPU** |
+| Mode | Local (hotseat) or Online (host configures; joiners take human seats) |
+
+- **0–4 humans** allowed — e.g. all-human (4), solo vs 3 CPU (1+3), all-CPU demo (0 humans, if offered), or any mix.
+- At least **one human** required to start a normal game (skip or hide all-CPU unless useful for testing).
+- Online: humans claim seats when joining; unclaimed seats run as **CPU** if the host enabled CPU fill for empty seats.
+
+## Turn timer
+
+- **30 seconds** per human turn (roll and/or move combined in one turn window, reset when turn passes).
+- Visible countdown; at **0** the turn is forfeited and passes to the next player (no roll, or no move if already rolled — implement as skip turn per rules engine).
+- Applies to **local and online** human seats. CPUs are not timed.
+- Audio/haptic optional later; v1 = visible bar or numeric countdown only.
+
+## CPU behavior
+
+- CPUs **try to win**: prioritize entering pieces, captures, blocking threats, advancing toward home, and using sixes well.
+- Think time: short delay (≈300–800ms) so moves feel considered, not instant.
+- No trash-talk or fake “personality” in v1.
+
+## Visual design (branding)
+
+- **Classic Mench / Ludo look:** four familiar player colors (red, green, yellow, blue), cross-shaped board, yards in corners, home triangles — recognizable at a glance.
+- **Minimal chrome:** thin borders, flat fills, little ornament; let the board and pieces carry the identity.
+- No custom logo or marketing kit yet — use simple wordmark “Mench” and placeholder PWA icons until art is added.
+- Tokens live in `src/shared/styles/tokens.css` (phase 2.1).
+
+## UX targets
+
+- **Minimal chrome:** board, dice, current player, setup, timer, win overlay.
+- **Animations:** dice roll (tumble/settle), piece slide along path, capture knock-home, subtle turn highlight.
+- **Touch-first:** large tap targets for dice and movable pieces; works in portrait on phones.
+- **Feedback:** illegal moves rejected in-place; legal moves highlighted; capture and extra-turn called out briefly.
+
+## Online multiplayer (v1)
+
+- Host starts room → **shareable code/link** (no public lobby).
+- Joiners enter code or open link; optional display name.
+- Server is source of truth; reconnect within session TTL if disconnected briefly.
+- **30s turn timer** enforced server-side for human seats.
+- If host leaves, promote another connected human or end game (phase 4.3).
+
+## PWA
+
+- Installable from browser (manifest + icons).
+- `standalone` display; safe areas for notched phones.
+- Offline: cached shell only; online play requires network.
+
+## Non-goals (v1)
+
+- Accounts, friends lists, rankings, chat
+- Monetization, ads, cosmetics shop
+- Persian Mench variant rules
+- Match replays / history
+- Voice/video
+- Tournament brackets

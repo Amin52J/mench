@@ -1,0 +1,48 @@
+---
+description: Language, lint, styling, and verification conventions for Mench.
+globs:
+  - "src/**"
+  - "worker/**"
+  - "*.config.*"
+  - "package.json"
+  - "tsconfig*.json"
+alwaysApply: false
+---
+
+# Conventions
+
+## Language & tooling
+
+- **TypeScript** strict mode everywhere (`src/`, `worker/`).
+- **React** function components; hooks for state. No class components.
+- **pnpm** only — `pnpm install`, `pnpm add <pkg>`, `pnpm exec`.
+- **ESLint** + **Prettier** (add in phase 1.1); run via package scripts.
+
+## Styling
+
+- **CSS Modules** co-located: `Component.module.css` next to `Component.tsx`.
+- Design tokens (colors, spacing, radii) in `src/shared/styles/tokens.css` imported once in `main`.
+- Prefer `rem` / `%` / `clamp()` for responsive layout; avoid fixed desktop-only widths.
+- Animations: CSS transitions/keyframes first; reach for a small lib only if justified in `decisions.mdc`.
+
+## Naming
+
+- Components: `PascalCase`. Files match component name.
+- Hooks: `useThing`. Game types: `PascalCase` in `src/game/types.ts`.
+- Tests: `*.test.ts` beside source or under `src/game/__tests__/`.
+
+## Verification (run before marking a phase done)
+
+```bash
+pnpm check:types   # tsc --noEmit
+pnpm check:lint    # eslint
+pnpm test          # vitest (rules + critical paths)
+pnpm build         # production build
+```
+
+Add scripts in phase 1.1 if missing. Do not skip verification on changed artifacts (`execution.mdc`).
+
+## Commits & phases
+
+- One phase ≈ one PR worth of scope when possible.
+- Update phase file checkboxes and `roadmap.mdc` icons when using `/implement`.

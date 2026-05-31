@@ -1,11 +1,9 @@
 /**
- * CPU AI public surface (phase 3.2).
- *
- * Heuristic move scoring + chooser. No lookahead — phase 3.3 will layer
- * shallow search over the same scoring functions (`decisions.mdc` O7).
+ * CPU AI public surface (phase 3.2 heuristics, 3.3 lookahead).
  */
 
 export { chooseMove, type ChooseMoveOptions } from './chooseMove.ts';
+export { SEARCH, scoreMovesWithLookahead, type LookaheadScore } from './search.ts';
 export {
   scoreMove,
   scoreMoves,

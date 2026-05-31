@@ -1,8 +1,8 @@
 /**
- * Heuristic scoring for CPU move selection (phase 3.2).
+ * Heuristic scoring for CPU move selection (phase 3.2 baseline, 3.3 retune).
  *
- * Pure functions over `GameState` + `LegalMove`. No lookahead — phase 3.3
- * adds shallow search on top of this scoring (`decisions.mdc` O7).
+ * Pure functions over `GameState` + `LegalMove`. Shallow lookahead in
+ * `search.ts` layers on top of these scores (`decisions.mdc` O7).
  *
  * Heuristic factors (weighted sum):
  *
@@ -40,7 +40,7 @@ import { pieceKey } from '../types.ts';
 export const WEIGHTS = {
   capture: 100,
   /** Multiplier on `(1 + stepsAlongTrack)` for a piece that escapes a threat. */
-  escapeBase: 40,
+  escapeBase: 30,
   escapeProgressBonus: 1,
   enterFromYard: 60,
   homeEntry: 45,

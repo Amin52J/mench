@@ -11,25 +11,10 @@ import {
   isGameOver,
   rollDice,
 } from './rules.ts';
+import { placePieces } from './fixtures.ts';
 import type { DieValue, GameState } from './rules.ts';
-import type { PieceId, PieceIndex, PiecePosition, PlayerColor } from './types.ts';
+import type { PieceId, PieceIndex, PlayerColor } from './types.ts';
 import { pieceKey } from './types.ts';
-
-// ---------- fixture builders ------------------------------------------------
-
-type PlacementSpec = Partial<Record<PlayerColor, readonly PiecePosition[]>>;
-
-function placePieces(state: GameState, placements: PlacementSpec): GameState {
-  const positions: Record<string, PiecePosition> = { ...state.board.positions };
-  for (const color of state.players) {
-    const specs = placements[color];
-    if (specs === undefined) continue;
-    specs.forEach((pos, index) => {
-      positions[pieceKey({ color, index: index as PieceIndex })] = pos;
-    });
-  }
-  return { ...state, board: { positions } };
-}
 
 function withDie(state: GameState, die: DieValue): GameState {
   return { ...state, phase: 'move', dice: die };

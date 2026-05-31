@@ -1,0 +1,39 @@
+:root {
+  /* Classic Mench / Ludo four player colors (decisions.mdc O15) */
+  --color-player-red: #e53935;
+  --color-player-green: #43a047;
+  --color-player-yellow: #fdd835;
+  --color-player-blue: #1e88e5;
+
+  --color-player-red-muted: color-mix(in srgb, var(--color-player-red) 18%, white);
+  --color-player-green-muted: color-mix(in srgb, var(--color-player-green) 18%, white);
+  --color-player-yellow-muted: color-mix(in srgb, var(--color-player-yellow) 28%, white);
+  --color-player-blue-muted: color-mix(in srgb, var(--color-player-blue) 18%, white);
+
+  --color-board-track: #f5f5f4;
+  --color-board-track-safe: #ececec;
+  --color-board-outline: #374151;
+  --color-board-center: #fafaf9;
+  --color-piece-outline: #1f2937;
+  --color-surface: #ffffff;
+  --color-text: #111827;
+  --color-text-muted: #4b5563;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-full: 9999px;
+
+  --motion-fast: 120ms;
+  --motion-normal: 220ms;
+  --motion-slow: 360ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --board-max-size: min(92vw, 92dvh, 28rem);
+  --board-cell-gap: 1px;
+}

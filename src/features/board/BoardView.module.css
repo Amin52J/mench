@@ -1,0 +1,143 @@
+.boardWrap {
+  width: min(100%, var(--board-max-size));
+  margin-inline: auto;
+}
+
+.boardWrap[data-active-color='red'] {
+  --active-player: var(--color-player-red);
+}
+.boardWrap[data-active-color='green'] {
+  --active-player: var(--color-player-green);
+}
+.boardWrap[data-active-color='yellow'] {
+  --active-player: var(--color-player-yellow);
+}
+.boardWrap[data-active-color='blue'] {
+  --active-player: var(--color-player-blue);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  grid-template-rows: repeat(15, 1fr);
+  gap: var(--board-cell-gap);
+  width: 100%;
+  aspect-ratio: 1;
+  padding: var(--space-1);
+  border: 2px solid var(--color-board-outline);
+  border-radius: var(--radius-sm);
+  background: var(--color-board-center);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--active-player, transparent) 35%, transparent),
+    inset 0 0 0 1px rgb(0 0 0 / 6%);
+}
+
+.cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.track {
+  background: var(--color-board-track);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
+}
+
+.track-safe {
+  background: var(--color-board-track-safe);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.track-safe::after {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border-radius: var(--radius-full);
+  border: 1px solid rgb(0 0 0 / 15%);
+  pointer-events: none;
+}
+
+.yard,
+.home {
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+}
+
+.tint-red.yard,
+.tint-red.home {
+  background: var(--color-player-red-muted);
+}
+.tint-green.yard,
+.tint-green.home {
+  background: var(--color-player-green-muted);
+}
+.tint-yellow.yard,
+.tint-yellow.home {
+  background: var(--color-player-yellow-muted);
+}
+.tint-blue.yard,
+.tint-blue.home {
+  background: var(--color-player-blue-muted);
+}
+
+.center {
+  background: var(--color-board-center);
+}
+
+.tint-red.center {
+  background: color-mix(in srgb, var(--color-player-red) 55%, white);
+}
+.tint-green.center {
+  background: color-mix(in srgb, var(--color-player-green) 55%, white);
+}
+.tint-yellow.center {
+  background: color-mix(in srgb, var(--color-player-yellow) 65%, white);
+}
+.tint-blue.center {
+  background: color-mix(in srgb, var(--color-player-blue) 55%, white);
+}
+
+.piece {
+  --slot-x: 50%;
+  --slot-y: 50%;
+  position: absolute;
+  width: 52%;
+  height: 52%;
+  left: var(--slot-x);
+  top: var(--slot-y);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-piece-outline);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+  transform: translate(-50%, -50%);
+}
+
+.piece[data-color='red'] {
+  background: var(--color-player-red);
+}
+.piece[data-color='green'] {
+  background: var(--color-player-green);
+}
+.piece[data-color='yellow'] {
+  background: var(--color-player-yellow);
+}
+.piece[data-color='blue'] {
+  background: var(--color-player-blue);
+}
+
+.piece:nth-child(1) {
+  --slot-x: 38%;
+  --slot-y: 38%;
+}
+.piece:nth-child(2) {
+  --slot-x: 62%;
+  --slot-y: 38%;
+}
+.piece:nth-child(3) {
+  --slot-x: 38%;
+  --slot-y: 62%;
+}
+.piece:nth-child(4) {
+  --slot-x: 62%;
+  --slot-y: 62%;
+}

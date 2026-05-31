@@ -8,6 +8,7 @@ describe('localGameReducer', () => {
     const setup = defaultSetup(2);
     let state = localGameReducer(null, { type: 'start', setup });
     expect(state).not.toBeNull();
+    expect(state!.seatKinds).toEqual(['human', 'human']);
     expect(activeColor(state!)).toBe('red');
 
     state = localGameReducer(state, { type: 'forfeit' });

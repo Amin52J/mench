@@ -28,6 +28,7 @@ describe('createGame', () => {
   it('starts a 2–4 player game in the roll phase with all pieces in the yard', () => {
     const game = createGame({ players: ['red', 'green', 'yellow', 'blue'] });
     expect(game.players).toEqual(['red', 'green', 'yellow', 'blue']);
+    expect(game.seatKinds).toEqual(['human', 'human', 'human', 'human']);
     expect(game.phase).toBe('roll');
     expect(game.dice).toBeNull();
     expect(game.consecutiveSixes).toBe(0);
@@ -56,6 +57,20 @@ describe('createGame', () => {
     );
     expect(() =>
       createGame({ players: ['red', 'green'], startingPlayerIndex: 2 }),
+    ).toThrow(RangeError);
+  });
+
+  it('stores seat kinds parallel to players', () => {
+    const game = createGame({
+      players: ['red', 'green', 'yellow'],
+      seatKinds: ['human', 'cpu', 'cpu'],
+    });
+    expect(game.seatKinds).toEqual(['human', 'cpu', 'cpu']);
+  });
+
+  it('rejects seatKinds length mismatch', () => {
+    expect(() =>
+      createGame({ players: ['red', 'green'], seatKinds: ['human'] }),
     ).toThrow(RangeError);
   });
 });

@@ -52,6 +52,7 @@ export default function App() {
           setup={session.setup}
           onPlayerCount={session.setPlayerCount}
           onSeatKind={session.setSeatKind}
+          onApplyPreset={session.applySetup}
           onStart={session.startGame}
         />
       ) : (

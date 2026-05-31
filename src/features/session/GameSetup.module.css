@@ -28,7 +28,8 @@
   color: var(--color-text-muted);
 }
 
-.countRow {
+.countRow,
+.presetRow {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);

@@ -7,7 +7,7 @@ import {
   type GameState,
 } from '@game/rules';
 import type { PieceId } from '@game/types';
-import { playersForCount, type GameSetup } from './types.ts';
+import { playersForCount, seatKindsFromSetup, type GameSetup } from './types.ts';
 
 export type LocalGameAction =
   | { readonly type: 'start'; readonly setup: GameSetup }
@@ -23,9 +23,15 @@ export function localGameReducer(
 ): GameState | null {
   switch (action.type) {
     case 'start':
-      return createGame({ players: [...playersForCount(action.setup.playerCount)] });
+      return createGame({
+        players: [...playersForCount(action.setup.playerCount)],
+        seatKinds: seatKindsFromSetup(action.setup),
+      });
     case 'restart':
-      return createGame({ players: [...playersForCount(action.setup.playerCount)] });
+      return createGame({
+        players: [...playersForCount(action.setup.playerCount)],
+        seatKinds: seatKindsFromSetup(action.setup),
+      });
     case 'roll':
       return state === null ? state : rollDice(state, action.die);
     case 'move':

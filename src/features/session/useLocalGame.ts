@@ -1,14 +1,22 @@
 import {
   activeColor,
+  activeSeatKind,
   getLegalMoves,
   IllegalIntentError,
   type GameState,
   type LegalMove,
 } from '@game/rules';
+import type { PlayerKind } from '@game/types';
 import { pieceKey, type PieceId } from '@game/types';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { localGameReducer, randomDie } from './localGameReducer.ts';
-import { defaultSetup, normalizeSetup, type GameSetup, type SeatConfig } from './types.ts';
+import { devAllowAllCpuStart } from './devFlags.ts';
+import {
+  defaultSetup,
+  normalizeSetup,
+  type GameSetup,
+  type SeatConfig,
+} from './types.ts';
 import { useTurnTimer } from './useTurnTimer.ts';
 
 export type LocalScreen = 'setup' | 'play';
@@ -23,13 +31,14 @@ export interface UseLocalGameResult {
   readonly setup: GameSetup;
   readonly setPlayerCount: (count: GameSetup['playerCount']) => void;
   readonly setSeatKind: (seatIndex: number, kind: SeatConfig['kind']) => void;
+  readonly applySetup: (setup: GameSetup) => void;
   readonly startGame: () => void;
   readonly restartGame: () => void;
   readonly backToSetup: () => void;
   readonly game: GameState | null;
-  readonly seats: readonly SeatConfig[];
+  readonly seatKinds: readonly PlayerKind[];
   readonly activeColor: ReturnType<typeof activeColor> | null;
-  readonly activeSeatKind: SeatConfig['kind'] | null;
+  readonly activeSeatKind: PlayerKind | null;
   readonly legalMoves: readonly LegalMove[];
   readonly legalPieceKeys: ReadonlySet<string>;
   readonly canRoll: boolean;
@@ -47,7 +56,6 @@ const FEEDBACK_MS = 1400;
 export function useLocalGame(): UseLocalGameResult {
   const [screen, setScreen] = useState<LocalScreen>('setup');
   const [setup, setSetup] = useState<GameSetup>(() => defaultSetup(4));
-  const [gameSeats, setGameSeats] = useState<readonly SeatConfig[]>([]);
   const [game, dispatch] = useReducer(localGameReducer, null);
   const [shakePieceKey, setShakePieceKey] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -91,10 +99,17 @@ export function useLocalGame(): UseLocalGameResult {
     }));
   }, []);
 
+  const applySetup = useCallback((next: GameSetup) => {
+    setSetup(normalizeSetup(next));
+  }, []);
+
   const startGame = useCallback(() => {
     const normalized = normalizeSetup(setup);
+    const hasHuman = normalized.seats.some((seat) => seat.kind === 'human');
+    if (!hasHuman && !devAllowAllCpuStart()) {
+      return;
+    }
     setSetup(normalized);
-    setGameSeats([...normalized.seats]);
     dispatch({ type: 'start', setup: normalized });
     setScreen('play');
     setShakePieceKey(null);
@@ -116,8 +131,11 @@ export function useLocalGame(): UseLocalGameResult {
   }, []);
 
   const activePlayerIndex = game?.activePlayerIndex ?? 0;
-  const seats = screen === 'play' ? gameSeats : setup.seats;
-  const activeSeatKind = game === null ? null : (gameSeats[activePlayerIndex]?.kind ?? 'human');
+  const seatKinds =
+    game === null
+      ? normalizeSetup(setup).seats.map((seat) => seat.kind)
+      : game.seatKinds;
+  const currentActiveSeatKind = game === null ? null : activeSeatKind(game);
   const active = game === null ? null : activeColor(game);
 
   const legalMoves = useMemo(
@@ -131,7 +149,7 @@ export function useLocalGame(): UseLocalGameResult {
   );
 
   const isHumanTurn =
-    game !== null && game.winner === null && activeSeatKind === 'human';
+    game !== null && game.winner === null && currentActiveSeatKind === 'human';
 
   const canRoll = isHumanTurn && game.phase === 'roll';
 
@@ -199,7 +217,7 @@ export function useLocalGame(): UseLocalGameResult {
     if (screen !== 'play' || game === null || game.winner !== null) {
       return;
     }
-    if (activeSeatKind !== 'cpu') {
+    if (currentActiveSeatKind !== 'cpu') {
       return;
     }
 
@@ -221,20 +239,21 @@ export function useLocalGame(): UseLocalGameResult {
     }, delayMs);
 
     return () => globalThis.clearTimeout(timer);
-  }, [activeSeatKind, game, screen]);
+  }, [currentActiveSeatKind, game, screen]);
 
   return {
     screen,
     setup,
     setPlayerCount,
     setSeatKind,
+    applySetup,
     startGame,
     restartGame,
     backToSetup,
     game,
-    seats,
+    seatKinds,
     activeColor: active,
-    activeSeatKind,
+    activeSeatKind: currentActiveSeatKind,
     legalMoves,
     legalPieceKeys,
     canRoll,

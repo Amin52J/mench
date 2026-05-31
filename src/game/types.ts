@@ -3,6 +3,9 @@ export type PlayerColor = 'red' | 'green' | 'yellow' | 'blue';
 
 export const PLAYER_COLORS = ['red', 'green', 'yellow', 'blue'] as const satisfies readonly PlayerColor[];
 
+/** Whether a seat is controlled by a human or the CPU (`product.mdc` O12). */
+export type PlayerKind = 'human' | 'cpu';
+
 export type PieceIndex = 0 | 1 | 2 | 3;
 
 /** One of four tokens for a seat. */

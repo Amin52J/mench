@@ -24,7 +24,14 @@ import {
   getStartTrackIndex,
   isSafeTrackIndex,
 } from './board.ts';
-import type { BoardState, PieceId, PieceIndex, PiecePosition, PlayerColor } from './types.ts';
+import type {
+  BoardState,
+  PieceId,
+  PieceIndex,
+  PiecePosition,
+  PlayerColor,
+  PlayerKind,
+} from './types.ts';
 import { PLAYER_COLORS, createInitialBoardState, pieceKey } from './types.ts';
 
 // ---------------------------------------------------------------------------
@@ -44,6 +51,8 @@ export interface GameState {
   readonly board: BoardState;
   /** Active seats, in clockwise turn order. Inactive colors are omitted. */
   readonly players: readonly PlayerColor[];
+  /** Human vs CPU per seat; parallel to {@link players}. */
+  readonly seatKinds: readonly PlayerKind[];
   /** Index into {@link players} of the seat whose turn it is. */
   readonly activePlayerIndex: number;
   readonly phase: TurnPhase;
@@ -86,12 +95,14 @@ export class IllegalIntentError extends Error {
 export interface CreateGameOptions {
   /** Seats in clockwise order. Length 2–4. Inactive colors are omitted. */
   readonly players: readonly PlayerColor[];
+  /** Human vs CPU per seat; defaults to all humans when omitted. */
+  readonly seatKinds?: readonly PlayerKind[];
   /** Optional override of the first player (index into `players`). */
   readonly startingPlayerIndex?: number;
 }
 
 export function createGame(options: CreateGameOptions): GameState {
-  const { players, startingPlayerIndex = 0 } = options;
+  const { players, seatKinds: seatKindsInput, startingPlayerIndex = 0 } = options;
   if (players.length < 2 || players.length > 4) {
     throw new RangeError(`players must be 2..4, got ${players.length}`);
   }
@@ -115,9 +126,25 @@ export function createGame(options: CreateGameOptions): GameState {
     );
   }
 
+  const seatKinds =
+    seatKindsInput === undefined
+      ? (Array.from({ length: players.length }, () => 'human' as const) satisfies PlayerKind[])
+      : [...seatKindsInput];
+  if (seatKinds.length !== players.length) {
+    throw new RangeError(
+      `seatKinds length must match players (${players.length}), got ${seatKinds.length}`,
+    );
+  }
+  for (const kind of seatKinds) {
+    if (kind !== 'human' && kind !== 'cpu') {
+      throw new RangeError(`unknown seat kind: ${String(kind)}`);
+    }
+  }
+
   return {
     board: createInitialBoardState(players),
     players,
+    seatKinds,
     activePlayerIndex: startingPlayerIndex,
     phase: 'roll',
     dice: null,
@@ -403,6 +430,10 @@ export function applyIntent(state: GameState, intent: GameIntent): GameState {
 
 export function activeColor(state: GameState): PlayerColor {
   return state.players[state.activePlayerIndex];
+}
+
+export function activeSeatKind(state: GameState): PlayerKind {
+  return state.seatKinds[state.activePlayerIndex];
 }
 
 function passTurn(state: GameState): GameState {

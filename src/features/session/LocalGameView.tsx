@@ -11,7 +11,7 @@ export interface LocalGameViewProps {
 }
 
 export function LocalGameView({ session }: LocalGameViewProps) {
-  const { game, setup, seats, activeColor, activeSeatKind, feedback } = session;
+  const { game, setup, seatKinds, activeColor, activeSeatKind, feedback } = session;
   if (game === null || activeColor === null) {
     return null;
   }
@@ -72,7 +72,7 @@ export function LocalGameView({ session }: LocalGameViewProps) {
         <ul className={styles.seatStatus} aria-label="Seat types">
           {players.map((color, index) => (
             <li key={color} data-color={color} data-active={color === activeColor ? 'true' : 'false'}>
-              {color}: {seats[index]?.kind ?? 'human'}
+              {color}: {seatKinds[index] ?? 'human'}
             </li>
           ))}
         </ul>

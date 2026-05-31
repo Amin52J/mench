@@ -6,10 +6,19 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage'] },
+  { ignores: ['dist', 'node_modules', 'coverage', '.wrangler'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended, prettier],
+    files: ['worker/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.worker,
+    },
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended, prettier],
     files: ['**/*.{ts,tsx}'],
+    ignores: ['worker/**'],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,

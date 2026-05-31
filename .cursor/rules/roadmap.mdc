@@ -63,7 +63,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 2. Board and dice stay in sync; **30s timer** enforced for human seats online.
 3. Up to 4 human joiners possible; empty CPU seats run on server when configured.
 
-**Phases:** 4.1 ⬜ · 4.2 ⬜ · 4.3 ⬜
+**Phases:** 4.1 ✅ · 4.2 ⬜ · 4.3 ⬜
 
 ---
 

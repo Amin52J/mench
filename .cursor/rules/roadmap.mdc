@@ -25,7 +25,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 
 ---
 
-## Wave 2 — Local playable UI ⬜
+## Wave 2 — Local playable UI ✅
 
 **Wave goal:** Play a full local game (2–4 humans and/or CPUs) with minimal classic board UI, animations, and **30s human turn timer**.
 
@@ -35,7 +35,7 @@ Implementation detail lives in `.implementation/wave-N/phase-X.Y.md`. Use `/impl
 2. Dice and pieces animate; classic four-color board; usable on phone width.
 3. Human turn forfeits after 30s countdown; illegal moves rejected.
 
-**Phases:** 2.1 ✅ · 2.2 ✅ · 2.3 ⬜
+**Phases:** 2.1 ✅ · 2.2 ✅ · 2.3 ✅
 
 ---
 

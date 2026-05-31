@@ -1,0 +1,50 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgb(17 24 39 / 45%);
+}
+
+.card {
+  width: min(100%, 18rem);
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.title span {
+  text-transform: capitalize;
+}
+
+.title span[data-color='red'] {
+  color: var(--color-player-red);
+}
+.title span[data-color='green'] {
+  color: var(--color-player-green);
+}
+.title span[data-color='yellow'] {
+  color: var(--color-player-yellow);
+}
+.title span[data-color='blue'] {
+  color: var(--color-player-blue);
+}
+
+.subtitle {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

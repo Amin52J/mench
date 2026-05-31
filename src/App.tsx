@@ -7,11 +7,12 @@ import {
   useAnimationPlayground,
   useDevBoardFixture,
 } from '@/features/board';
-import { HomeView, OnlineJoinGate, OnlineRoomView } from '@/features/lobby';
+import { HomeView, OfflinePage, OnlineJoinGate, OnlineRoomView } from '@/features/lobby';
 import { buildOnlineCredentials, parseJoinLink } from '@/features/online';
 import type { OnlineRoomCredentials } from '@/features/online';
 import { GameSetupView, LocalGameView, useLocalGame } from '@/features/session';
 import { pieceKey } from '@game/types';
+import { useNetworkStatus } from '@/shared/hooks';
 import { Button, Panel } from '@/shared/ui';
 import styles from './App.module.css';
 
@@ -26,6 +27,7 @@ function isFixtureMode(): boolean {
 }
 
 export default function App() {
+  const online = useNetworkStatus();
   const session = useLocalGame();
   const playground = useAnimationPlayground();
   const fixture = useDevBoardFixture();
@@ -98,6 +100,7 @@ export default function App() {
       <AppHeader />
       {screen === 'home' ? (
         <HomeView
+          online={online}
           onLocalGame={() => setScreen('local')}
           onHostRoom={handleHostRoom}
           onJoinRoom={handleJoinRoom}
@@ -131,7 +134,10 @@ export default function App() {
           </>
         )
       ) : null}
-      {screen === 'online' && linkJoin && onlineCredentials === null ? (
+      {screen === 'online' && !online ? (
+        <OfflinePage onBack={leaveOnline} />
+      ) : null}
+      {screen === 'online' && online && linkJoin && onlineCredentials === null ? (
         <OnlineJoinGate
           roomId={linkJoin.roomId}
           joinCode={linkJoin.joinCode}
@@ -139,7 +145,7 @@ export default function App() {
           onCancel={leaveOnline}
         />
       ) : null}
-      {screen === 'online' && onlineCredentials !== null ? (
+      {screen === 'online' && online && onlineCredentials !== null ? (
         <OnlineRoomView credentials={onlineCredentials} onLeave={leaveOnline} />
       ) : null}
       {import.meta.env.DEV && screen !== 'online' ? (

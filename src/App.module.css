@@ -4,7 +4,8 @@
   align-items: center;
   gap: var(--space-4);
   min-height: 100dvh;
-  padding: var(--space-4) var(--space-3) var(--space-6);
+  padding: max(var(--space-4), env(safe-area-inset-top)) max(var(--space-3), env(safe-area-inset-right))
+    max(var(--space-6), env(safe-area-inset-bottom)) max(var(--space-3), env(safe-area-inset-left));
 }
 
 .header {

@@ -9,6 +9,12 @@
   color: var(--color-muted, #555);
 }
 
+.offlineHint {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
 .actions {
   display: flex;
   flex-direction: column;

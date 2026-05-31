@@ -5,6 +5,7 @@ import { Button, Input, Panel } from '@/shared/ui';
 import styles from './HomeView.module.css';
 
 export interface HomeViewProps {
+  readonly online: boolean;
   readonly onLocalGame: () => void;
   readonly onHostRoom: (room: {
     roomId: string;
@@ -22,6 +23,7 @@ export interface HomeViewProps {
 }
 
 export function HomeView({
+  online,
   onLocalGame,
   onHostRoom,
   onJoinRoom,
@@ -35,6 +37,10 @@ export function HomeView({
   const [error, setError] = useState<string | null>(null);
 
   const handleCreate = async (): Promise<void> => {
+    if (!online) {
+      setError('You are offline. Online play needs a network connection.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -48,6 +54,10 @@ export function HomeView({
   };
 
   const handleJoin = (): void => {
+    if (!online) {
+      setError('You are offline. Online play needs a network connection.');
+      return;
+    }
     const code = joinCode.trim().toUpperCase();
     const id = roomId.trim();
     if (!code) {
@@ -69,9 +79,14 @@ export function HomeView({
   return (
     <Panel className={styles.panel}>
       <p className={styles.lead}>Play standard Ludo locally or online with friends.</p>
+      {!online ? (
+        <p className={styles.offlineHint} role="status">
+          You are offline. Local games work; online rooms need a connection.
+        </p>
+      ) : null}
       <div className={styles.actions}>
         <Button onClick={onLocalGame}>Local game</Button>
-        <Button onClick={() => void handleCreate()} disabled={busy}>
+        <Button onClick={() => void handleCreate()} disabled={busy || !online}>
           {busy ? 'Creating…' : 'Create online game'}
         </Button>
       </div>
@@ -108,7 +123,7 @@ export function HomeView({
             />
           </label>
         </div>
-        <Button variant="ghost" onClick={handleJoin}>
+        <Button variant="ghost" onClick={handleJoin} disabled={!online}>
           Join room
         </Button>
       </div>

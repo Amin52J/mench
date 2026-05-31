@@ -1,6 +1,7 @@
 .boardWrap {
   width: min(100%, var(--board-max-size));
   margin-inline: auto;
+  touch-action: manipulation;
 }
 
 .boardWrap[data-active-color='red'] {

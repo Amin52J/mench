@@ -57,6 +57,7 @@ Workers alone cannot remember which tab belongs to which half-finished game. A *
 | `pnpm preview` | Serve the production build locally |
 | `pnpm check:types` | `tsc --noEmit` (app + worker project references) |
 | `pnpm check:lint` | ESLint |
+| `pnpm check:pwa` | Manifest + service worker checks (needs `pnpm preview` running) |
 | `pnpm test` | Vitest (unit tests) |
 
 ### API smoke test (local Worker)
